@@ -107,8 +107,9 @@ def walk_dicom_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relati
         yield rel_path, pd.DataFrame(result)
 
 
+# TODO: add console script
 def join_dicom_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = False,
-                    verbose: bool = True) -> pd.DataFrame:
+                    verbose: bool = False) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
 
