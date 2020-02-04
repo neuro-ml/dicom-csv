@@ -1,0 +1,4 @@
+pydicom
+pandas
+numpy
+tqdm
