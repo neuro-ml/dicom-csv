@@ -1,6 +1,5 @@
 """Contains functions for gathering metadata from individual DICOM files or entire directories."""
 import os
-from operator import itemgetter
 from os.path import join as jp
 from typing import Sequence
 
@@ -77,33 +76,6 @@ def get_file_meta(path: PathLike) -> dict:
     return result
 
 
-def walk_tree(top: PathLike, ignore_extensions: Sequence[str], relative: bool, verbose: int):
-    for extension in ignore_extensions:
-        if not extension.startswith('.'):
-            raise ValueError(f'Each extension must start with a dot: "{extension}".')
-
-    bar = tqdm(disable=not verbose)
-    for root, _, files in os.walk(top, onerror=_throw, followlinks=True):
-        files = [file_ for file_ in files if not any(file_.endswith(ext) for ext in ignore_extensions)]
-        if not files:
-            continue
-
-        rel_path = os.path.relpath(root, top)
-        result = []
-
-        for file in files:
-            bar.update()
-            if verbose > 1:
-                bar.set_description(jp(rel_path, file))
-
-            entry = get_file_meta(jp(root, file))
-            entry['PathToFolder'] = rel_path if relative else root
-            entry['FileName'] = file
-            result.append(entry)
-
-        yield rel_path, pd.DataFrame(result)
-
-
 def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True,
               verbose: int = 0) -> pd.DataFrame:
     """
@@ -138,6 +110,27 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
         >>> conda install -c glueviz gdcm # Python 3.5 and 3.6
         >>> conda install -c conda-forge gdcm # Python 3.7
     """
-    return pd.concat(
-        map(itemgetter(1), walk_tree(top, ignore_extensions, relative, verbose)), sort=False
-    ).reset_index(drop=True)
+    for extension in ignore_extensions:
+        if not extension.startswith('.'):
+            raise ValueError(f'Each extension must start with a dot: "{extension}".')
+
+    result = []
+    bar = tqdm(disable=not verbose)
+    for root, _, files in os.walk(top, onerror=_throw, followlinks=True):
+        files = [file_ for file_ in files if not any(file_.endswith(ext) for ext in ignore_extensions)]
+        if not files:
+            continue
+
+        rel_path = os.path.relpath(root, top)
+
+        for file in files:
+            bar.update()
+            if verbose > 1:
+                bar.set_description(jp(rel_path, file))
+
+            entry = get_file_meta(jp(root, file))
+            entry['PathToFolder'] = rel_path if relative else root
+            entry['FileName'] = file
+            result.append(entry)
+
+    return pd.DataFrame(result)
