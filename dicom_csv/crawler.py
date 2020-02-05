@@ -10,10 +10,10 @@ from pydicom import valuerep, errors, dcmread
 
 from .utils import PathLike
 
-__all__ = 'get_file_meta', 'join_dicom_tree'
+__all__ = 'get_file_meta', 'join_tree'
 
-serial = {'ImagePositionPatient', 'ImageOrientationPatient', 'PixelSpacing'}
-person_class = (valuerep.PersonName3, valuerep.PersonNameBase)
+SERIAL = {'ImagePositionPatient', 'ImageOrientationPatient', 'PixelSpacing'}
+PERSON_CLASS = (valuerep.PersonName3, valuerep.PersonNameBase)
 
 
 def _throw(e):
@@ -38,7 +38,7 @@ def get_file_meta(path: PathLike) -> dict:
     result = {}
 
     try:
-        dc = dcmread(path)
+        dc = dcmread(str(path))
         result['NoError'] = True
     except (errors.InvalidDicomError, OSError, NotImplementedError, AttributeError):
         result['NoError'] = False
@@ -64,10 +64,10 @@ def get_file_meta(path: PathLike) -> dict:
         if value is None:
             continue
 
-        if isinstance(value, person_class):
+        if isinstance(value, PERSON_CLASS):
             result[attr] = str(value)
 
-        elif attr in serial:
+        elif attr in SERIAL:
             for pos, num in enumerate(value):
                 result[f'{attr}{pos}'] = num
 
@@ -77,28 +77,25 @@ def get_file_meta(path: PathLike) -> dict:
     return result
 
 
-def walk_dicom_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True, verbose: bool = True):
+def walk_tree(top: PathLike, ignore_extensions: Sequence[str], relative: bool, verbose: int):
     for extension in ignore_extensions:
         if not extension.startswith('.'):
             raise ValueError(f'Each extension must start with a dot: "{extension}".')
 
-    def walker():
-        for root_, _, files_ in os.walk(top, onerror=_throw, followlinks=True):
-            files_ = [file_ for file_ in files_ if not any(file_.endswith(ext) for ext in ignore_extensions)]
-            if files_:
-                yield root_, files_
+    bar = tqdm(disable=not verbose)
+    for root, _, files in os.walk(top, onerror=_throw, followlinks=True):
+        files = [file_ for file_ in files if not any(file_.endswith(ext) for ext in ignore_extensions)]
+        if not files:
+            continue
 
-    iterator = walker()
-    if verbose:
-        iterator = tqdm(iterator)
-
-    for root, files in iterator:
         rel_path = os.path.relpath(root, top)
-        if verbose:
-            iterator.set_description(rel_path)
-
         result = []
+
         for file in files:
+            bar.update()
+            if verbose > 1:
+                bar.set_description(jp(rel_path, file))
+
             entry = get_file_meta(jp(root, file))
             entry['PathToFolder'] = rel_path if relative else root
             entry['FileName'] = file
@@ -107,9 +104,8 @@ def walk_dicom_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relati
         yield rel_path, pd.DataFrame(result)
 
 
-# TODO: add console script
-def join_dicom_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = False,
-                    verbose: bool = False) -> pd.DataFrame:
+def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True,
+              verbose: int = 0) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
 
@@ -120,7 +116,10 @@ def join_dicom_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relati
     relative
         whether the ``PathToFolder`` attribute should be relative to ``top``.
     verbose
-        whether to display a `tqdm` progressbar.
+        the verbosity level:
+            | 0 - no progressbar
+            | 1 - progressbar with iterations count
+            | 2 - progressbar with filenames
 
     References
     ----------
@@ -140,5 +139,5 @@ def join_dicom_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relati
         >>> conda install -c conda-forge gdcm # Python 3.7
     """
     return pd.concat(
-        map(itemgetter(1), walk_dicom_tree(top, ignore_extensions, relative, verbose)), sort=False
+        map(itemgetter(1), walk_tree(top, ignore_extensions, relative, verbose)), sort=False
     ).reset_index(drop=True)

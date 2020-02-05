@@ -26,4 +26,9 @@ setup(
     classifiers=classifiers.splitlines(),
     install_requires=requirements,
     python_requires='>=3.6',
+    entry_points={
+        'console_scripts': [
+            'dicom-csv = dicom_csv.scripts:join_to_csv',
+        ],
+    },
 )

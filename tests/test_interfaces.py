@@ -1,13 +1,13 @@
 from pathlib import Path
 import numpy as np
 
-from dicom_csv import join_dicom_tree, aggregate_images, load_series
+from dicom_csv import join_tree, aggregate_images, load_series
 
 base_path = Path('~/dicom_data').expanduser()
 
 
 def get_meta():
-    return join_dicom_tree(base_path, relative=True, verbose=False)
+    return join_tree(base_path, relative=True, verbose=False)
 
 
 def test_crawler():
