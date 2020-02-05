@@ -27,7 +27,7 @@ def aggregate_images(metadata: pd.DataFrame, by: Sequence[str] = AGGREGATE_BY,
     Parameters
     ----------
     metadata
-        a dataframe with metadata returned by `join_dicom_tree`.
+        a dataframe with metadata returned by `join_tree`.
     by
         a list of column names by which the grouping will be performed.
         Default columns are: PatientID, SeriesInstanceUID, StudyInstanceUID,

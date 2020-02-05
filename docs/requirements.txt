@@ -1,0 +1,6 @@
+pydicom
+pandas
+numpy
+tqdm
+
+sphinx>=2.3

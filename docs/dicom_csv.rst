@@ -38,7 +38,7 @@ Console scripts
 ===============
 
 This library contains a console script around `join_tree`,
-which is added to your namespaces after installation:
+which is added to your namespace after installation:
 
 .. code-block:: bash
 
