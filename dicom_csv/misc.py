@@ -19,7 +19,8 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: bool = 
     If ``base_path`` is not None, PathToFolder is assumed to be relative to it.
 
     If ``orientation`` is True, the loaded image will be transposed and flipped
-    to standard (Coronal, Sagittal, Axial) orientation.
+    to standard (Coronal, Sagittal, Axial) orientation. If None, the orientation
+    will be standardized only if possible (i.e. all the necessary metadata is present).
 
     Required columns: PathToFolder, FileNames.
     """

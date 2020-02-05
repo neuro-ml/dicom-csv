@@ -117,13 +117,12 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
     result = []
     bar = tqdm(disable=not verbose)
     for root, _, files in os.walk(top, onerror=_throw, followlinks=True):
-        files = [file_ for file_ in files if not any(file_.endswith(ext) for ext in ignore_extensions)]
-        if not files:
-            continue
-
         rel_path = os.path.relpath(root, top)
 
         for file in files:
+            if any(file.endswith(ext) for ext in ignore_extensions):
+                continue
+
             bar.update()
             if verbose > 1:
                 bar.set_description(jp(rel_path, file))

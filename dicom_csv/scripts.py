@@ -11,7 +11,7 @@ def join_to_csv():
     parser.add_argument('-a', '--absolute', default=False, action='store_true',
                         help='Whether the paths in the dataframe should be `absolute` or relative to `top`.')
     parser.add_argument('-v', '--verbose', default=0, action='count',
-                        help='Whether to show a progress bar.')
+                        help='Whether to show a progressbar.')
     args = parser.parse_args()
 
     join_tree(args.top, relative=not args.absolute, verbose=args.verbose).to_csv(args.output)
