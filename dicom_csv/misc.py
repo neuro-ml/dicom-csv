@@ -56,8 +56,8 @@ def construct_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
     SpacingBetweenSlices;
     ImageShape are stored
 
-    TODO: check ImagePositionPatient to be the very first one
-    TODO: update requirements
+    TODO: check ImagePositionPatient to be the very first one, update requirements,
+     fix ImagePostionPatient indexing (0 and 1 are not always the right ones)
     """
     if array is None:
         array = load_series(reference_row, orientation=False)

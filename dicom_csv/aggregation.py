@@ -93,6 +93,7 @@ def normalize_identifiers(metadata: pd.DataFrame) -> pd.DataFrame:
         metadata.SequenceName.fillna('', inplace=True)
     return metadata
 
+
 def update_entry(metadata: pd.DataFrame) -> pd.DataFrame:
     """Applies series of postprocessing steps on a metadata, for `aggregate_images` process_series parameter"""
     # TODO
