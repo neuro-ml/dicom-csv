@@ -4,6 +4,7 @@ from os.path import join as jp
 
 import numpy as np
 from pydicom import dcmread
+from nibabel import Nifti1Header, Nifti1Image
 
 from .spatial import *
 from .utils import *
@@ -42,3 +43,34 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: bool = 
         return x
 
     return normalize_orientation(x, row)
+
+
+def save_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
+    """Construct a nifti image from dicoms.
+
+    Notes:
+    ImagePositionPatient_x,y,z;
+    PixelSpacing_x,y;
+    SpacingBetweenSlices;
+    ImageShape are stored
+
+    TODO: check ImagePositionPatient to be the very first one
+    """
+    if array is None:
+        array = load_series(reference_row, orientation=False)
+
+    M = get_orientation_matrix(reference_row)
+    offset = reference_row[['ImagePositionPatient0',
+                            'ImagePositionPatient1',
+                            'ImagePositionPatient2']].values[0]
+    OM = np.concatenate((M, offset), axis=1)
+
+    header = Nifti1Header()
+    header.set_data_shape([float(s) for s in reference_row['PixelArrayShape'].split(',')])
+    header.set_zooms(reference_row[['PixelSpacing0',
+                                    'PixelSpacing1',
+                                    'SpacingBetweenSlices']].values[0])
+    header.set_sform(OM)
+    header.set_dim_info(slice=2)
+    return Nifti1Image(array, OM, header=header)
+
