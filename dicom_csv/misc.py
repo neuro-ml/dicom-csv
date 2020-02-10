@@ -1,4 +1,5 @@
 import os
+import warnings
 from operator import itemgetter
 from os.path import join as jp
 
@@ -42,10 +43,11 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: bool = 
     if not orientation:
         return x
 
+    warnings.warn('Image shape is changed, and possibly not consistent with the metadata')
     return normalize_orientation(x, row)
 
 
-def save_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
+def construct_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
     """Construct a nifti image from dicoms.
 
     Notes:
@@ -55,6 +57,7 @@ def save_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
     ImageShape are stored
 
     TODO: check ImagePositionPatient to be the very first one
+    TODO: update requirements
     """
     if array is None:
         array = load_series(reference_row, orientation=False)
@@ -66,7 +69,9 @@ def save_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
     OM = np.concatenate((M, offset), axis=1)
 
     header = Nifti1Header()
-    header.set_data_shape([float(s) for s in reference_row['PixelArrayShape'].split(',')])
+    data_shape = [int(s) for s in reference_row['PixelArrayShape'].split(',')]
+    data_shape.append(reference_row['SlicesCount'])
+    header.set_data_shape()
     header.set_zooms(reference_row[['PixelSpacing0',
                                     'PixelSpacing1',
                                     'SpacingBetweenSlices']].values[0])
