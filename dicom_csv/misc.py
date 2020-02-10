@@ -63,15 +63,15 @@ def construct_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
         array = load_series(reference_row, orientation=False)
 
     M = get_orientation_matrix(reference_row)
-    offset = reference_row[['ImagePositionPatient0',
-                            'ImagePositionPatient1',
-                            'ImagePositionPatient2']].values[0]
-    OM = np.concatenate((M, offset), axis=1)
+    offset = list(reference_row[['ImagePositionPatient0',
+                                 'ImagePositionPatient1']].values[0])
+    offset.append(sorted([float(loc) for loc in reference_row['SliceLocations'].split(',')])[0])
+    OM = np.concatenate((M, np.array(offset).reshape(-1,1)), axis=1)
 
     header = Nifti1Header()
     data_shape = [int(s) for s in reference_row['PixelArrayShape'].split(',')]
     data_shape.append(reference_row['SlicesCount'])
-    header.set_data_shape()
+    header.set_data_shape(data_shape)
     header.set_zooms(reference_row[['PixelSpacing0',
                                     'PixelSpacing1',
                                     'SpacingBetweenSlices']].values[0])

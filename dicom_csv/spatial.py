@@ -60,6 +60,18 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
     return metadata
 
 
+def restore_slice_location(metadata: pd.DataFrame) -> pd.DataFrame:
+    """Restore SliceLocation from ImagePositionPatient,
+    Caution! modifies metadata inplace"""
+    coords = metadata[['ImagePositionPatient0',
+                       'ImagePositionPatient1',
+                       'ImagePositionPatient2',]].values
+    OM = get_orientation_matrix(metadata.iloc[0])
+    new_coords = coords.dot(OM).astype(np.float32)
+    j = np.argmax(np.std(new_coords, axis=0))
+    metadata.loc[:, 'SliceLocation'] = new_coords[:, j]
+    return metadata
+
 def order_slice_locations(dicom_metadata):
     return np.array(sorted(zip_equal(
         split_floats(dicom_metadata.InstanceNumbers),
