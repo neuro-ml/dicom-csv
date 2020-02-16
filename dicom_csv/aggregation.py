@@ -67,8 +67,17 @@ def aggregate_images(metadata: pd.DataFrame, by: Sequence[str] = AGGREGATE_BY,
             res['InstanceNumbers'] = None
         if 'SliceLocation' in entry:
             res['SliceLocations'] = ','.join(entry.SliceLocation.astype(str))
+        for position in ['ImagePositionPatient0', 'ImagePositionPatient1', 'ImagePositionPatient2']:
+            if position in entry:
+                res[f'{position}s'] = ','.join(entry[position].astype(str))
 
-        return res.drop(['InstanceNumber', 'FileName', 'SliceLocation'], 1, errors='ignore')
+        return res.drop(['InstanceNumber',
+                         'FileName',
+                         'SliceLocation',
+                         'ImagePositionPatient0',
+                         'ImagePositionPatient1',
+                         'ImagePositionPatient2'],
+                        1, errors='ignore')
 
     by = list(by)
     not_string = metadata[by].applymap(lambda x: not isinstance(x, str)).any()

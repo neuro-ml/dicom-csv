@@ -60,17 +60,19 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
     return metadata
 
 
-def restore_slice_location(dicom_metadata: pd.DataFrame) -> pd.DataFrame:
+def restore_slice_location(dicom_metadata: pd.Series) -> pd.DataFrame:
     """Restore SliceLocation from ImagePositionPatient,
-    Caution! modifies metadata inplace"""
+    Caution! modifies metadata inplace
+    Should return zipped InstanceNumber - SliceLocation just as order_slice_location
+    TODO
+    """
     # TODO: Fix to take into account HFS
-    coords = dicom_metadata[['ImagePositionPatient0',
-                       'ImagePositionPatient1',
-                       'ImagePositionPatient2',]].values
+    coords = dicom_metadata[['ImagePositionPatient0s',
+                             'ImagePositionPatient1s',
+                             'ImagePositionPatient2s']].values
     OM = get_orientation_matrix(dicom_metadata.iloc[0])
     new_coords = coords.dot(OM).astype(np.float32)
     j = np.argmax(np.std(new_coords, axis=0))
-    dicom_metadata.loc[:, 'SliceLocation'] = new_coords[:, j]
     return dicom_metadata
 
 
@@ -95,6 +97,7 @@ def should_flip(dicom_metadata: pd.Series):
 def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True):
     """
     Computes the spacing between slices for a dicom series.
+    Add slice restoration in case of non diagonal rotation matrix
     """
     instances, locations = order_slice_locations(dicom_metadata)
     dx, dy = np.diff([instances, locations], axis=1)
