@@ -60,20 +60,20 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
     return metadata
 
 
-def restore_slice_location(dicom_metadata: pd.Series) -> pd.DataFrame:
+def restore_slice_location(dicom_metadata: pd.Series):
     """Restore SliceLocation from ImagePositionPatient,
-    Caution! modifies metadata inplace
-    Should return zipped InstanceNumber - SliceLocation just as order_slice_location
-    TODO
-    """
-    # TODO: Fix to take into account HFS
-    coords = dicom_metadata[['ImagePositionPatient0s',
-                             'ImagePositionPatient1s',
-                             'ImagePositionPatient2s']].values
+    as if orientation matrix was Identity"""
+    coords = np.vstack(
+        (split_floats(dicom_metadata.ImagePositionPatient0s),
+         split_floats(dicom_metadata.ImagePositionPatient1s),
+         split_floats(dicom_metadata.ImagePositionPatient2s))
+    ).T
     OM = get_orientation_matrix(dicom_metadata.iloc[0])
     new_coords = coords.dot(OM).astype(np.float32)
-    j = np.argmax(np.std(new_coords, axis=0))
-    return dicom_metadata
+    j = np.argmax(np.std(new_coords, axis=0)) # <- heuristic (x, y) are almost unchanged and z is changing
+    instances = split_floats(dicom_metadata.InstanceNumbers)
+    order = np.argsort(instances)
+    return np.vstack((instances[order], new_coords[order, j]))
 
 
 def order_slice_locations(dicom_metadata: pd.Series):
