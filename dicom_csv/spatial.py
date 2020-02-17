@@ -144,7 +144,7 @@ def normalize_orientation(image: np.ndarray, row: pd.Series):
     return image.transpose(*np.abs(m).argmax(axis=0))
 
 
-def get_patient_position(dicom_metadata: pd.Series,):
+def get_patient_position(dicom_metadata: pd.Series):
     """Returns ImagePatientPosition_x,y,z"""
     coords = np.vstack(
         (split_floats(dicom_metadata.ImagePositionPatient0s),

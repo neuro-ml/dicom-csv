@@ -1,7 +1,5 @@
 from setuptools import setup, find_packages
 
-from dicom_csv import __version__
-
 classifiers = '''Development Status :: 4 - Beta
 Programming Language :: Python :: 3.6'''
 
@@ -10,6 +8,12 @@ with open('README.md', encoding='utf-8') as file:
 
 with open('requirements.txt', encoding='utf-8') as file:
     requirements = file.read().splitlines()
+
+# get the current version
+with open('dicom_csv/__version__.py', encoding='utf-8') as file:
+    scope = {}
+    exec(file.read(), scope)
+    __version__ = scope['__version__']
 
 setup(
     name='dicom_csv',

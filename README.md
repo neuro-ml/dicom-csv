@@ -4,7 +4,7 @@ Utils for gathering, aggregation and handling metadata from DICOM files.
 
 ```bash
 git clone https://github.com/neuro-ml/dicom-csv
-cd deep_pipe
+cd dicom-csv
 pip install -e .
 ```
 
