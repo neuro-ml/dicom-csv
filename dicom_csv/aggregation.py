@@ -103,12 +103,6 @@ def normalize_identifiers(metadata: pd.DataFrame) -> pd.DataFrame:
     return metadata
 
 
-def update_entry(metadata: pd.DataFrame) -> pd.DataFrame:
-    """Applies series of postprocessing steps on a metadata, for `aggregate_images` process_series parameter"""
-    # TODO
-    pass
-
-
 def select(dataframe: pd.DataFrame, query: str, **where: str) -> pd.DataFrame:
     query = ' '.join(query.format(**where).splitlines())
     return dataframe.query(query).dropna(axis=1, how='all').dropna(axis=0, how='all')

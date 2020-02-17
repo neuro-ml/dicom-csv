@@ -55,27 +55,22 @@ def construct_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
     PixelSpacing_x,y;
     SpacingBetweenSlices;
     ImageShape are stored
-
-    TODO: check ImagePositionPatient to be the very first one, update requirements,
-     fix ImagePostionPatient indexing (0 and 1 are not always the right ones)
     """
     if array is None:
         array = load_series(reference_row, orientation=False)
 
     M = get_orientation_matrix(reference_row)
-    offset = list(reference_row[['ImagePositionPatient0',
-                                 'ImagePositionPatient1']].values[0])
-    offset.append(sorted([float(loc) for loc in reference_row['SliceLocations'].split(',')])[0])
+    offset = get_patient_position(reference_row)
+    slice_spacing = get_slice_spacing(reference_row)
+    pixel_spacings = reference_row[['PixelSpacing0', 'PixelSpacing1']].values
     OM = np.concatenate((M, np.array(offset).reshape(-1,1)), axis=1)
-
-    header = Nifti1Header()
     data_shape = [int(s) for s in reference_row['PixelArrayShape'].split(',')]
     data_shape.append(reference_row['SlicesCount'])
+
+    header = Nifti1Header()
     header.set_data_shape(data_shape)
-    header.set_zooms(reference_row[['PixelSpacing0',
-                                    'PixelSpacing1',
-                                    'SpacingBetweenSlices']].values[0])
+    header.set_zooms(np.hstack((pixel_spacings, slice_spacing)).astype(np.float32))
     header.set_sform(OM)
-    header.set_dim_info(slice=2)
+    # header.set_dim_info(slice=2)
     return Nifti1Image(array, OM, header=header)
 

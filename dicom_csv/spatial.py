@@ -4,7 +4,7 @@ from .utils import *
 
 __all__ = [
     'get_orientation_matrix', 'get_orientation_axis', 'restore_orientation_matrix',
-    'should_flip', 'normalize_orientation', 'get_slice_spacing',
+    'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position'
 ]
 
 
@@ -104,10 +104,7 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True):
     Computes the spacing between slices for a dicom series.
     Add slice restoration in case of non diagonal rotation matrix
     """
-    try:
-        instances, locations = order_slice_locations(dicom_metadata)
-    except ValueError:
-        instances, locations = restore_slice_locations(dicom_metadata)
+    instances, locations = restore_slice_locations(dicom_metadata)
     dx, dy = np.diff([instances, locations], axis=1)
     spacing = dy / dx
 
@@ -145,3 +142,15 @@ def normalize_orientation(image: np.ndarray, row: pd.Series):
         if m[i, j] < 0:
             image = np.flip(image, axis=i)
     return image.transpose(*np.abs(m).argmax(axis=0))
+
+
+def get_patient_position(dicom_metadata: pd.Series,):
+    """Returns ImagePatientPosition_x,y,z"""
+    coords = np.vstack(
+        (split_floats(dicom_metadata.ImagePositionPatient0s),
+         split_floats(dicom_metadata.ImagePositionPatient1s),
+         split_floats(dicom_metadata.ImagePositionPatient2s))
+    ).T
+    instances = np.array(split_floats(dicom_metadata.InstanceNumbers))
+    order = np.argsort(instances)
+    return coords[order[0]]
