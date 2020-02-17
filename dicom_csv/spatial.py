@@ -1,5 +1,5 @@
 import numpy as np
-
+import warnings
 from .utils import *
 
 __all__ = [
@@ -60,7 +60,7 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
     return metadata
 
 
-def restore_slice_location(dicom_metadata: pd.Series):
+def restore_slice_locations(dicom_metadata: pd.Series):
     """Restore SliceLocation from ImagePositionPatient,
     as if orientation matrix was Identity"""
     coords = np.vstack(
@@ -68,18 +68,23 @@ def restore_slice_location(dicom_metadata: pd.Series):
          split_floats(dicom_metadata.ImagePositionPatient1s),
          split_floats(dicom_metadata.ImagePositionPatient2s))
     ).T
-    OM = get_orientation_matrix(dicom_metadata.iloc[0])
+    OM = get_orientation_matrix(dicom_metadata)
     new_coords = coords.dot(OM).astype(np.float32)
-    j = np.argmax(np.std(new_coords, axis=0)) # <- heuristic (x, y) are almost unchanged and z is changing
-    instances = split_floats(dicom_metadata.InstanceNumbers)
+    j = np.argmax(np.std(new_coords, axis=0))  # <- heuristic (x, y) are almost unchanged and z is changing
+    instances = np.array(split_floats(dicom_metadata.InstanceNumbers))
     order = np.argsort(instances)
     return np.vstack((instances[order], new_coords[order, j]))
 
 
 def order_slice_locations(dicom_metadata: pd.Series):
+    locations = split_floats(dicom_metadata.SliceLocations)
+    if np.any([np.isnan(loc) for loc in locations]):
+        raise ValueError("Some SliceLocations are missing")
+    # Do not put `restore_slice_location` here,
+    # since `should_flip` has unexpected behaviour in that case.
     return np.array(sorted(zip_equal(
         split_floats(dicom_metadata.InstanceNumbers),
-        split_floats(dicom_metadata.SliceLocations),
+        locations
     ))).T
 
 
@@ -99,7 +104,10 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True):
     Computes the spacing between slices for a dicom series.
     Add slice restoration in case of non diagonal rotation matrix
     """
-    instances, locations = order_slice_locations(dicom_metadata)
+    try:
+        instances, locations = order_slice_locations(dicom_metadata)
+    except ValueError:
+        instances, locations = restore_slice_locations(dicom_metadata)
     dx, dy = np.diff([instances, locations], axis=1)
     spacing = dy / dx
 
@@ -122,6 +130,7 @@ def normalize_orientation(image: np.ndarray, row: pd.Series):
     """
     Transposes and flips the ``image`` to standard (Coronal, Sagittal, Axial) orientation.
     """
+    warnings.warn("Changing image orientation. New image orientation will not coincide with metadata!")
     if not contains_info(row, *ORIENTATION):
         raise ValueError('There is no enough metadata to standardize the image orientation.')
 
