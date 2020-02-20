@@ -69,8 +69,9 @@ def construct_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
 
     header = Nifti1Header()
     header.set_data_shape(data_shape)
+    # TODO HeaderDataError: zooms must be positive
     header.set_zooms(np.hstack((pixel_spacings, slice_spacing)).astype(np.float32))
     header.set_sform(OM)
-    # header.set_dim_info(slice=2)
+    # header.set_dim_info(slice=2) # TODO
     return Nifti1Image(array, OM, header=header)
 

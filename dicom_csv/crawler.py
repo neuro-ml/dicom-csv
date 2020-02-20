@@ -4,6 +4,7 @@ from os.path import join as jp
 from typing import Sequence
 
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 from pydicom import valuerep, errors, dcmread
 
@@ -68,7 +69,7 @@ def get_file_meta(path: PathLike) -> dict:
 
         elif attr in SERIAL:
             for pos, num in enumerate(value):
-                result[f'{attr}{pos}'] = num
+                result[f'{attr}{pos}'] = np.round(num, 5)  # float precision errors
 
         elif isinstance(value, (int, float, str)):
             result[attr] = value

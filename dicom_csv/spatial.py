@@ -62,18 +62,43 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
 
 def restore_slice_locations(dicom_metadata: pd.Series):
     """Restore SliceLocation from ImagePositionPatient,
-    as if orientation matrix was Identity"""
+    as if orientation matrix was Identity
+    TODO: rewrite"""
+    instances = np.array(split_floats(dicom_metadata.InstanceNumbers))
+    order = np.argsort(instances)
     coords = np.vstack(
         (split_floats(dicom_metadata.ImagePositionPatient0s),
          split_floats(dicom_metadata.ImagePositionPatient1s),
          split_floats(dicom_metadata.ImagePositionPatient2s))
     ).T
     OM = get_orientation_matrix(dicom_metadata)
-    new_coords = coords.dot(OM).astype(np.float32)
-    j = np.argmax(np.std(new_coords, axis=0))  # <- heuristic (x, y) are almost unchanged and z is changing
-    instances = np.array(split_floats(dicom_metadata.InstanceNumbers))
-    order = np.argsort(instances)
-    return np.vstack((instances[order], new_coords[order, j]))
+
+    def max_min(xyz):
+        return np.max(xyz, axis=0) - np.min(xyz, axis=0)
+
+    def check(d):
+        return (d < 1e-2).sum() == 2
+
+    delta = max_min(coords)
+    print(delta)
+    if check(delta):
+        j = np.argmax(delta)
+        return np.vstack((instances[order], coords[order, j]))
+
+    new_coords = coords.dot(OM)
+    delta = max_min(new_coords)
+    print(delta)
+    if check(delta):
+        j = np.argmax(delta)
+        return np.vstack((instances[order], coords[order, j]))
+
+    new_coords = coords.dot(OM.T)
+    delta = max_min(new_coords)
+    print(delta)
+    if check(delta):
+        j = np.argmax(delta)
+        return np.vstack((instances[order], coords[order, j]))
+    raise Exception('Something went terribly wrong!')
 
 
 def order_slice_locations(dicom_metadata: pd.Series):
