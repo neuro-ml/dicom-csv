@@ -70,7 +70,10 @@ def aggregate_images(metadata: pd.DataFrame, by: Sequence[str] = AGGREGATE_BY,
         for position in ['ImagePositionPatient0', 'ImagePositionPatient1', 'ImagePositionPatient2']:
             if position in entry:
                 res[f'{position}s'] = ','.join(entry[position].astype(str))
+        if 'SOPInstanceUID' in entry:
+            res['SOPInstanceUIDs'] = ','.join(entry.SOPInstanceUID.astype(str))
 
+        # Why do wee need this? All these columns are not in unique_cols already.
         return res.drop(['InstanceNumber',
                          'FileName',
                          'SliceLocation',
