@@ -80,21 +80,21 @@ def restore_slice_locations(dicom_metadata: pd.Series):
         return (d < 1e-2).sum() == 2
 
     delta = max_min(coords)
-    print(delta)
+    # print(delta)
     if check(delta):
         j = np.argmax(delta)
         return np.vstack((instances[order], coords[order, j]))
 
     new_coords = coords.dot(OM)
     delta = max_min(new_coords)
-    print(delta)
+    # print(delta)
     if check(delta):
         j = np.argmax(delta)
         return np.vstack((instances[order], new_coords[order, j]))
 
     new_coords = coords.dot(OM.T)
     delta = max_min(new_coords)
-    print(delta)
+    # print(delta)
     if check(delta):
         j = np.argmax(delta)
         return np.vstack((instances[order], new_coords[order, j]))
@@ -145,8 +145,7 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True):
 
         return np.nan
 
-    return spacing.mean()
-
+    return np.abs(spacing.mean())
 
 def normalize_orientation(image: np.ndarray, row: pd.Series):
     """
