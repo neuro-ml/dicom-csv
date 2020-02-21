@@ -90,14 +90,14 @@ def restore_slice_locations(dicom_metadata: pd.Series):
     print(delta)
     if check(delta):
         j = np.argmax(delta)
-        return np.vstack((instances[order], coords[order, j]))
+        return np.vstack((instances[order], new_coords[order, j]))
 
     new_coords = coords.dot(OM.T)
     delta = max_min(new_coords)
     print(delta)
     if check(delta):
         j = np.argmax(delta)
-        return np.vstack((instances[order], coords[order, j]))
+        return np.vstack((instances[order], new_coords[order, j]))
     raise Exception('Something went terribly wrong!')
 
 
