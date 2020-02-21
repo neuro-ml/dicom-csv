@@ -63,7 +63,9 @@ def construct_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
     offset = get_patient_position(reference_row)
     slice_spacing = get_slice_spacing(reference_row)
     pixel_spacings = reference_row[['PixelSpacing0', 'PixelSpacing1']].values
-    OM = np.concatenate((M, np.array(offset).reshape(-1,1)), axis=1)
+    OM = np.eye(4)
+    OM[:3, :3] = M
+    OM[:3, 3] = offset
     data_shape = [int(s) for s in reference_row['PixelArrayShape'].split(',')]
     data_shape.append(reference_row['SlicesCount'])
 
