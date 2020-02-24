@@ -147,6 +147,7 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True):
 
     return np.abs(spacing.mean())
 
+
 def normalize_orientation(image: np.ndarray, row: pd.Series):
     """
     Transposes and flips the ``image`` to standard (Coronal, Sagittal, Axial) orientation.

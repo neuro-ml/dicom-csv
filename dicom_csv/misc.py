@@ -5,7 +5,6 @@ from os.path import join as jp
 
 import numpy as np
 from pydicom import dcmread
-from nibabel import Nifti1Header, Nifti1Image
 
 from .spatial import *
 from .utils import *
@@ -47,7 +46,7 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: bool = 
     return normalize_orientation(x, row)
 
 
-def construct_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
+def construct_nifti(reference_row: pd.Series, array=None):
     """Construct a nifti image from dicoms.
 
     Notes:
@@ -56,6 +55,8 @@ def construct_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
     SpacingBetweenSlices;
     ImageShape are stored
     """
+    from nibabel import Nifti1Header, Nifti1Image
+
     if array is None:
         array = load_series(reference_row, orientation=False)
 
@@ -76,4 +77,3 @@ def construct_nifti(reference_row: pd.Series, array=None) -> Nifti1Image:
     header.set_sform(OM)
     # header.set_dim_info(slice=2) # TODO
     return Nifti1Image(array, OM, header=header)
-

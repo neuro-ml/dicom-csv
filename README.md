@@ -2,6 +2,13 @@ Utils for gathering, aggregation and handling metadata from DICOM files.
 
 # Installation
 
+From pip
+```
+pip install dicom-csv
+```
+
+or from GitHub
+
 ```bash
 git clone https://github.com/neuro-ml/dicom-csv
 cd dicom-csv
