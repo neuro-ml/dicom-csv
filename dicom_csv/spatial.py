@@ -77,24 +77,21 @@ def restore_slice_locations(dicom_metadata: pd.Series):
         return np.max(xyz, axis=0) - np.min(xyz, axis=0)
 
     def check(d):
-        return (d < 1e-2).sum() == 2
+        return (d < 0.05).sum() == 2
 
     delta = max_min(coords)
-    # print(delta)
     if check(delta):
         j = np.argmax(delta)
         return np.vstack((instances[order], coords[order, j]))
 
     new_coords = coords.dot(OM)
     delta = max_min(new_coords)
-    # print(delta)
     if check(delta):
         j = np.argmax(delta)
         return np.vstack((instances[order], new_coords[order, j]))
 
     new_coords = coords.dot(OM.T)
     delta = max_min(new_coords)
-    # print(delta)
     if check(delta):
         j = np.argmax(delta)
         return np.vstack((instances[order], new_coords[order, j]))
@@ -147,6 +144,7 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True):
 
     return np.abs(spacing.mean())
 
+
 def normalize_orientation(image: np.ndarray, row: pd.Series):
     """
     Transposes and flips the ``image`` to standard (Coronal, Sagittal, Axial) orientation.
@@ -169,7 +167,8 @@ def normalize_orientation(image: np.ndarray, row: pd.Series):
 
 
 def get_patient_position(dicom_metadata: pd.Series):
-    """Returns ImagePatientPosition_x,y,z"""
+    """Returns ImagePatientPosition_x,y,z
+    TODO: Consider rewriting this to take into account non identity OMs"""
     coords = np.vstack(
         (split_floats(dicom_metadata.ImagePositionPatient0s),
          split_floats(dicom_metadata.ImagePositionPatient1s),
