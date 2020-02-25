@@ -44,7 +44,7 @@ def get_fixed_orientation_matrix(row):
         delta = max_min(new_coords)
         if check(delta):
             return om
-    raise Exception('ImagePositionPatient coordinates are inconsistent.')
+    raise ValueError('ImagePositionPatient coordinates are inconsistent.')
 
 
 def get_orientation_axis(metadata: Union[pd.Series, pd.DataFrame]):
@@ -114,7 +114,7 @@ def restore_slice_locations(dicom_metadata: pd.Series):
             j = np.argmax(delta)
             return np.vstack((instances[order], new_coords[order, j]))
 
-    raise Exception('ImagePositionPatient coordinates are inconsistent.')
+    raise ValueError('ImagePositionPatient coordinates are inconsistent.')
 
 
 def order_slice_locations(dicom_metadata: pd.Series):
