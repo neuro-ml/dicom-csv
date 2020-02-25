@@ -62,8 +62,7 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
 
 def restore_slice_locations(dicom_metadata: pd.Series):
     """Restore SliceLocation from ImagePositionPatient,
-    as if orientation matrix was Identity
-    TODO: rewrite"""
+    as if orientation matrix was Identity"""
     instances = np.array(split_floats(dicom_metadata.InstanceNumbers))
     order = np.argsort(instances)
     coords = np.vstack(
@@ -77,25 +76,17 @@ def restore_slice_locations(dicom_metadata: pd.Series):
         return np.max(xyz, axis=0) - np.min(xyz, axis=0)
 
     def check(d):
+        """Two out of three coordinates should be equal across slices"""
         return (d < 0.05).sum() == 2
 
-    delta = max_min(coords)
-    if check(delta):
-        j = np.argmax(delta)
-        return np.vstack((instances[order], coords[order, j]))
+    for om in [np.eye(3), OM, OM.T]:
+        new_coords = coords.dot(om)
+        delta = max_min(new_coords)
+        if check(delta):
+            j = np.argmax(delta)
+            return np.vstack((instances[order], new_coords[order, j]))
 
-    new_coords = coords.dot(OM)
-    delta = max_min(new_coords)
-    if check(delta):
-        j = np.argmax(delta)
-        return np.vstack((instances[order], new_coords[order, j]))
-
-    new_coords = coords.dot(OM.T)
-    delta = max_min(new_coords)
-    if check(delta):
-        j = np.argmax(delta)
-        return np.vstack((instances[order], new_coords[order, j]))
-    raise Exception('Something went terribly wrong!')
+    raise Exception('ImagePositionPatient coordinates are inconsistent.')
 
 
 def order_slice_locations(dicom_metadata: pd.Series):
