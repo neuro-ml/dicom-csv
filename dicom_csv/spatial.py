@@ -19,6 +19,34 @@ def get_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
     return result
 
 
+def get_fixed_orientation_matrix(row):
+    """Sometimes Orientation Matrix is stored in row-wise fashion instead of column-wise.
+    Here we check this and return column-wise OM
+    TODO: reconsider/refactor"""
+
+    def max_min(xyz):
+        return np.max(xyz, axis=0) - np.min(xyz, axis=0)
+
+    def check(d):
+        """Two out of three coordinates should be equal across slices"""
+        return (d < 0.05).sum() == 2
+
+    pos = np.array(sorted(zip(
+        split_floats(row['InstanceNumbers']),
+        split_floats(row['ImagePositionPatient0s']),
+        split_floats(row['ImagePositionPatient1s']),
+        split_floats(row['ImagePositionPatient2s']),
+    )))[:, 1:]
+    OM = get_orientation_matrix(row)
+
+    for om in [OM, OM.T]:
+        new_coords = pos.dot(om)
+        delta = max_min(new_coords)
+        if check(delta):
+            return om
+    raise Exception('ImagePositionPatient coordinates are inconsistent.')
+
+
 def get_orientation_axis(metadata: Union[pd.Series, pd.DataFrame]):
     """Required columns: ImageOrientationPatient[0-5]"""
     m = get_orientation_matrix(metadata)
