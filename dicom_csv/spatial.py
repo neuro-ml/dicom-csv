@@ -167,8 +167,12 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True):
 def normalize_orientation(image: np.ndarray, row: pd.Series):
     """
     Transposes and flips the ``image`` to standard (Coronal, Sagittal, Axial) orientation.
+
+    Warnings
+    --------
+    Changing image orientation. New image orientation will not coincide with metadata!
     """
-    warnings.warn("Changing image orientation. New image orientation will not coincide with metadata!")
+
     if not contains_info(row, *ORIENTATION):
         raise ValueError('There is no enough metadata to standardize the image orientation.')
 
