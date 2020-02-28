@@ -7,8 +7,12 @@ PathLike = Union[Path, str]
 ORIENTATION = [f'ImageOrientationPatient{i}' for i in range(6)]
 
 
-def split_floats(string):
-    return list(map(float, string.split(',')))
+def split_floats(string, sep=','):
+    return list(map(float, string.split(sep)))
+
+
+def split_ints(string, sep=','):
+    return list(map(int, string.split(sep)))
 
 
 def contains_info(row, *cols):
