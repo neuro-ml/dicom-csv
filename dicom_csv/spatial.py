@@ -20,7 +20,7 @@ def get_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
     return result
 
 
-def get_fixed_orientation_matrix(row, return_main_plain=False):
+def get_fixed_orientation_matrix(row, return_main_plain_axis=False):
     """Sometimes Orientation Matrix is stored in row-wise fashion instead of column-wise.
     Here we check this and return column-wise OM
     TODO: compare return_main_plain with `get_orientation_axis`"""
@@ -36,7 +36,7 @@ def get_fixed_orientation_matrix(row, return_main_plain=False):
         new_coords = coords.dot(om)
         delta = np.max(new_coords, axis=0) - np.min(new_coords, axis=0)
         if check(delta):
-            if return_main_plain:
+            if return_main_plain_axis:
                 return om, np.where(delta < 0.05)[0]
             return om
     raise ValueError('ImagePositionPatient coordinates are inconsistent.')
@@ -86,22 +86,13 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
 def restore_slice_locations(dicom_metadata: pd.Series):
     """Restore SliceLocation from ImagePositionPatient,
     as if orientation matrix was Identity"""
+
     pos = get_patient_position(dicom_metadata)
-    coords = pos[:, 1:]
-    OM = get_orientation_matrix(dicom_metadata)
-
-    def check(d):
-        """Two out of three coordinates should be equal across slices"""
-        return (d < 0.05).sum() == 2
-
-    for om in [np.eye(3), OM, OM.T]:
-        new_coords = coords.dot(om)
-        delta = np.max(new_coords, axis=0) - np.min(new_coords, axis=0)
-        if check(delta):
-            j = np.argmax(delta)
-            return pos[:, j+1]
-
-    raise ValueError('ImagePositionPatient coordinates are inconsistent.')
+    instances, coords = pos[:, 0], pos[:, 1:]
+    OM, main_plain_axis = get_fixed_orientation_matrix(dicom_metadata, return_main_plain_axis=True)
+    new_coords = coords.dot(OM)
+    j = list({0,1,2}.difference(set(main_plain_axis)))[0]
+    return np.vstack(instances, new_coords[:, j])
 
 
 def order_slice_locations(dicom_metadata: pd.Series):
@@ -191,13 +182,10 @@ def get_patient_position(row: pd.Series):
 def get_xyz_spacing(row: pd.Series):
     """Returns pixel spacing + distance between slices (between their centers),
     in an order consistent with ImagePositionPatient's columns order."""
-    _, indices = get_fixed_orientation_matrix(row, True)
+    _, indices = get_fixed_orientation_matrix(row, return_main_plain_axis=True)
     xyz = np.zeros(3)
     xy = list(row[['PixelSpacing0', 'PixelSpacing1']].values)
-
-    temp = {0, 1, 2}
-    temp.difference_update(set(indices))
-    index_z = list(temp)[0]
+    index_z = list({0, 1, 2}.difference(set(indices)))[0]
 
     xyz[indices[0]] = xy[0]
     xyz[indices[1]] = xy[1]
