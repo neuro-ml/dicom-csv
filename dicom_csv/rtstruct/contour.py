@@ -5,7 +5,7 @@ import numpy as np
 
 from ..utils import split_ints, split_floats
 from .meta import _get_contour_seq_name
-from ..spatial import get_fixed_orientation_matrix, get_xyz_spacing
+from ..spatial import get_fixed_orientation_matrix, get_xyz_spacing, get_patient_position
 
 
 def _read_contour_sequence(dataset: Dataset) -> dict:
@@ -59,12 +59,7 @@ def contours_to_image(row, contours_dict):
     #  TODO: write get_position function
     OM = get_fixed_orientation_matrix(row)
     xyz = get_xyz_spacing(row)
-    pos = np.array(sorted(zip(
-        split_floats(row['InstanceNumbers']),
-        split_floats(row['ImagePositionPatient0s']),
-        split_floats(row['ImagePositionPatient1s']),
-        split_floats(row['ImagePositionPatient2s']),
-    )))[:, 1:]
+    pos = get_patient_position(row)[:, 1:]
 
     contours_image_dict = dict()
 
