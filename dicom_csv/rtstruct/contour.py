@@ -3,8 +3,9 @@ from pydicom.dataset import Dataset
 
 import numpy as np
 
-from ..utils import split_ints
+from ..utils import split_ints, split_floats
 from .meta import _get_contour_seq_name
+from ..spatial import get_fixed_orientation_matrix, get_xyz_spacing
 
 
 def _read_contour_sequence(dataset: Dataset) -> dict:
@@ -51,3 +52,28 @@ def read_rtstruct(row) -> dict:
             print(f'No {name} contour.')
 
     return contours_result
+
+
+def contours_to_image(row, contours_dict):
+    """Moves contours coordinates to image space."""
+    #  TODO: write get_position function
+    OM = get_fixed_orientation_matrix(row)
+    xyz = get_xyz_spacing(row)
+    pos = np.array(sorted(zip(
+        split_floats(row['InstanceNumbers']),
+        split_floats(row['ImagePositionPatient0s']),
+        split_floats(row['ImagePositionPatient1s']),
+        split_floats(row['ImagePositionPatient2s']),
+    )))[:, 1:]
+
+    contours_image_dict = dict()
+
+    for roi_name, roi_coordinates in contours_dict.items():
+        contours_image_dict[roi_name] = dict()
+        for slice_number, coordinates_list in roi_coordinates.items():
+            contours_image_dict[roi_name][slice_number] = []
+            for coords in coordinates_list:
+                new_coords = (coords - pos[slice_number]).dot(OM) / xyz
+                contours_image_dict[roi_name][slice_number].append(new_coords)
+
+    return contours_image_dict

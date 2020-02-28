@@ -61,7 +61,7 @@ def construct_nifti(reference_row: pd.Series, array=None):
         array = load_series(reference_row, orientation=False)
 
     M = get_orientation_matrix(reference_row)
-    offset = get_patient_position(reference_row)
+    offset = get_patient_position(reference_row)[0, 1:]
     slice_spacing = get_slice_spacing(reference_row)
     pixel_spacings = reference_row[['PixelSpacing0', 'PixelSpacing1']].values
     OM = np.eye(4)

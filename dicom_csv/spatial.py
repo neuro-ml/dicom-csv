@@ -4,7 +4,8 @@ from .utils import *
 
 __all__ = [
     'get_orientation_matrix', 'get_orientation_axis', 'restore_orientation_matrix',
-    'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position'
+    'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position',
+    'get_fixed_orientation_matrix', 'get_xyz_spacing'
 ]
 
 
@@ -28,16 +29,11 @@ def get_fixed_orientation_matrix(row, return_main_plain=False):
         """Two out of three coordinates should be equal across slices."""
         return (d < 0.05).sum() == 2
 
-    pos = np.array(sorted(zip(
-        split_floats(row['InstanceNumbers']),
-        split_floats(row['ImagePositionPatient0s']),
-        split_floats(row['ImagePositionPatient1s']),
-        split_floats(row['ImagePositionPatient2s']),
-    )))[:, 1:]
+    coords = get_patient_position(row)[:, 1:]
     OM = get_orientation_matrix(row)
 
     for om in [OM, OM.T]:
-        new_coords = pos.dot(om)
+        new_coords = coords.dot(om)
         delta = np.max(new_coords, axis=0) - np.min(new_coords, axis=0)
         if check(delta):
             if return_main_plain:
@@ -90,17 +86,9 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
 def restore_slice_locations(dicom_metadata: pd.Series):
     """Restore SliceLocation from ImagePositionPatient,
     as if orientation matrix was Identity"""
-    instances = np.array(split_floats(dicom_metadata.InstanceNumbers))
-    order = np.argsort(instances)
-    coords = np.vstack(
-        (split_floats(dicom_metadata.ImagePositionPatient0s),
-         split_floats(dicom_metadata.ImagePositionPatient1s),
-         split_floats(dicom_metadata.ImagePositionPatient2s))
-    ).T
+    pos = get_patient_position(dicom_metadata)
+    coords = pos[:, 1:]
     OM = get_orientation_matrix(dicom_metadata)
-
-    def max_min(xyz):
-        return np.max(xyz, axis=0) - np.min(xyz, axis=0)
 
     def check(d):
         """Two out of three coordinates should be equal across slices"""
@@ -108,10 +96,10 @@ def restore_slice_locations(dicom_metadata: pd.Series):
 
     for om in [np.eye(3), OM, OM.T]:
         new_coords = coords.dot(om)
-        delta = max_min(new_coords)
+        delta = np.max(new_coords, axis=0) - np.min(new_coords, axis=0)
         if check(delta):
             j = np.argmax(delta)
-            return np.vstack((instances[order], new_coords[order, j]))
+            return pos[:, j+1]
 
     raise ValueError('ImagePositionPatient coordinates are inconsistent.')
 
@@ -188,17 +176,16 @@ def normalize_orientation(image: np.ndarray, row: pd.Series):
     return image.transpose(*np.abs(m).argmax(axis=0))
 
 
-def get_patient_position(dicom_metadata: pd.Series):
-    """Returns ImagePatientPosition_x,y,z
-    TODO: Consider rewriting this to take into account non identity OMs"""
-    coords = np.vstack(
-        (split_floats(dicom_metadata.ImagePositionPatient0s),
-         split_floats(dicom_metadata.ImagePositionPatient1s),
-         split_floats(dicom_metadata.ImagePositionPatient2s))
-    ).T
-    instances = np.array(split_floats(dicom_metadata.InstanceNumbers))
-    order = np.argsort(instances)
-    return coords[order[0]]
+def get_patient_position(row: pd.Series):
+    """Returns ImagePatientPosition_x,y,z"""
+    # TODO: Consider rewriting this to take into account non identity OMs
+    pos = np.array(sorted(zip(
+        split_floats(row['InstanceNumbers']),
+        split_floats(row['ImagePositionPatient0s']),
+        split_floats(row['ImagePositionPatient1s']),
+        split_floats(row['ImagePositionPatient2s']),
+    )))
+    return pos
 
 
 def get_xyz_spacing(row: pd.Series):
