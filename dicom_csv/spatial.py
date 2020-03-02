@@ -92,7 +92,7 @@ def restore_slice_locations(dicom_metadata: pd.Series):
     OM, main_plain_axis = get_fixed_orientation_matrix(dicom_metadata, return_main_plain_axis=True)
     new_coords = coords.dot(OM)
     j = list({0,1,2}.difference(set(main_plain_axis)))[0]
-    return np.vstack(instances, new_coords[:, j])
+    return np.vstack((instances, new_coords[:, j]))
 
 
 def order_slice_locations(dicom_metadata: pd.Series):
