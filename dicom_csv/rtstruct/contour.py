@@ -7,6 +7,8 @@ from ..utils import split_ints, split_floats
 from .meta import _get_contour_seq_name
 from ..spatial import get_fixed_orientation_matrix, get_xyz_spacing, get_patient_position
 
+__all__ = 'read_rtstruct', 'contours_to_image'
+
 
 def _read_contour_sequence(dataset: Dataset) -> dict:
 
