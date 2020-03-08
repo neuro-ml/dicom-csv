@@ -20,7 +20,7 @@ setup(
     packages=find_packages(include=('dicom_csv',)),
     include_package_data=True,
     version=__version__,
-    descriprion='Utils for gathering, aggregation and handling metadata from DICOM files.',
+    description='Utils for gathering, aggregation and handling metadata from DICOM files.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='MIT',

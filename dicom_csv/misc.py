@@ -18,7 +18,7 @@ class Default:
 
 
 # TODO: move to pathlib
-def load_series(row: pd.Series, base_path: PathLike = None, orientation: bool = Default) -> np.ndarray:
+def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[bool, None] = Default) -> np.ndarray:
     """
     Loads an image based on its ``row`` in the metadata dataframe.
 
