@@ -51,10 +51,10 @@ def get_file_meta(path: PathLike) -> dict:
     except ValueError:
         has_px = True
         result['NoError'] = False
-    else:
-        if has_px:
-            result['PixelArrayShape'] = ','.join(map(str, dc.pixel_array.shape))
+
     result['HasPixelArray'] = has_px
+    if has_px and result['NoError']:
+        result['PixelArrayShape'] = ','.join(map(str, dc.pixel_array.shape))
 
     for attr in dc.dir():
         try:

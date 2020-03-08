@@ -96,7 +96,7 @@ There is a file ``readme.txt`` in the root of the folders tree, which is
 obvisously not a DICOM file.
 
 Note that ``PathToFolder`` is relative to ``path``, this is because we
-passed ``relative=True`` to ``join_dicom_tree``.
+passed ``relative=True`` to ``join_tree``.
 
 .. code-block:: python3
 
@@ -189,9 +189,12 @@ using the following function:
 it expects a row from the aggregated dataframe and, optionally, the
 ``path`` argument, if the paths are relative.
 
-The image's orientation as well as the slices' order are determined
-automatically, but you can customize this behaviour by passing the
-``orientation`` argument:
+The image's orientation as well as the slices' order can be determined
+automatically, if you pass ``orientation=True``:
+
+.. code-block:: python3
+
+    img = load_series(images.loc[0], path, orientation=True)
 
 .. code-block:: python3
 

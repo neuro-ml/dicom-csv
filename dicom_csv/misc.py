@@ -12,8 +12,13 @@ from .utils import *
 __all__ = 'load_series',
 
 
+# TODO: legacy support
+class Default:
+    pass
+
+
 # TODO: move to pathlib
-def load_series(row: pd.Series, base_path: PathLike = None, orientation: bool = None) -> np.ndarray:
+def load_series(row: pd.Series, base_path: PathLike = None, orientation: bool = Default) -> np.ndarray:
     """
     Loads an image based on its ``row`` in the metadata dataframe.
 
@@ -25,6 +30,11 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: bool = 
 
     Required columns: PathToFolder, FileNames.
     """
+    if orientation is Default:
+        orientation = None
+        warnings.warn('The default value for `orientation` will be changed to `False` in next releases. '
+                      'Pass orientation=None, if you wish to keep the old behaviour.', UserWarning)
+
     folder, files = row.PathToFolder, row.FileNames.split('/')
     if base_path is not None:
         folder = os.path.join(base_path, folder)
@@ -42,7 +52,6 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: bool = 
     if not orientation:
         return x
 
-    warnings.warn('Image shape is changed, and possibly not consistent with the metadata')
     return normalize_orientation(x, row)
 
 

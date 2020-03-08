@@ -1,5 +1,5 @@
 import numpy as np
-import warnings
+
 from .utils import *
 
 __all__ = [
@@ -22,8 +22,9 @@ def get_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
 
 def get_fixed_orientation_matrix(row, return_main_plain_axis=False):
     """Sometimes Orientation Matrix is stored in row-wise fashion instead of column-wise.
-    Here we check this and return column-wise OM
-    TODO: compare return_main_plain with `get_orientation_axis`"""
+    Here we check this and return column-wise OM"""
+
+    # TODO: compare return_main_plain with `get_orientation_axis`
 
     def check(d):
         """Two out of three coordinates should be equal across slices."""
@@ -91,7 +92,7 @@ def restore_slice_locations(dicom_metadata: pd.Series):
     instances, coords = pos[:, 0], pos[:, 1:]
     OM, main_plain_axis = get_fixed_orientation_matrix(dicom_metadata, return_main_plain_axis=True)
     new_coords = coords.dot(OM)
-    j = list({0,1,2}.difference(set(main_plain_axis)))[0]
+    j = list({0, 1, 2}.difference(set(main_plain_axis)))[0]
     return np.vstack((instances, new_coords[:, j]))
 
 
@@ -118,7 +119,7 @@ def should_flip(dicom_metadata: pd.Series):
     return flip != direction
 
 
-def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True):
+def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True) -> float:
     """
     Computes the spacing between slices for a dicom series.
     Add slice restoration in case of non diagonal rotation matrix
