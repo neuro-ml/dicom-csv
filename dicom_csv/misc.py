@@ -58,11 +58,11 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[b
 def construct_nifti(reference_row: pd.Series, array=None):
     """Construct a nifti image from dicoms.
 
+    If ``array`` is not None, image metadata is taken from reference_row,
+    and image tensor is an array. This is mainly for saving contour masks.
+
     Notes:
-    ImagePositionPatient_x,y,z;
-    PixelSpacing_x,y;
-    SpacingBetweenSlices;
-    ImageShape are stored
+    ImagePositionPatient_x,y,z; PixelSpacing_x,y; SpacingBetweenSlices; ImageShape are stored
     """
     from nibabel import Nifti1Header, Nifti1Image
 
@@ -81,7 +81,6 @@ def construct_nifti(reference_row: pd.Series, array=None):
 
     header = Nifti1Header()
     header.set_data_shape(data_shape)
-    # TODO HeaderDataError: zooms must be positive
     header.set_zooms(np.hstack((pixel_spacings, slice_spacing)).astype(np.float32))
     header.set_sform(OM)
     # header.set_dim_info(slice=2) # TODO

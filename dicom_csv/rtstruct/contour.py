@@ -2,8 +2,9 @@ from pydicom import dcmread
 from pydicom.dataset import Dataset
 
 import numpy as np
+import pandas as pd
 
-from ..utils import split_ints, split_floats
+from ..utils import split_ints
 from .meta import _get_contour_seq_name
 from ..spatial import get_fixed_orientation_matrix, get_xyz_spacing, get_patient_position
 
@@ -11,6 +12,7 @@ __all__ = 'read_rtstruct', 'contours_to_image'
 
 
 def _read_contour_sequence(dataset: Dataset) -> dict:
+    """Extract a single contour from contour's Dataset."""
 
     contour_sequence_dict = dict()
 
@@ -30,7 +32,9 @@ def _read_contour_sequence(dataset: Dataset) -> dict:
     return contour_sequence_dict
 
 
-def read_rtstruct(row) -> dict:
+def read_rtstruct(row: pd.Series) -> dict:
+    """Read dicom file with RTStruture."""
+
     if row.InstanceNumbers is None:
         raise AttributeError('Contour does not have associated image.')
 
@@ -56,9 +60,9 @@ def read_rtstruct(row) -> dict:
     return contours_result
 
 
-def contours_to_image(row, contours_dict):
+def contours_to_image(row:pd.Series, contours_dict:dict) -> dict:
     """Moves contours coordinates to image space."""
-    #  TODO: write get_position function
+
     OM = get_fixed_orientation_matrix(row)
     xyz = get_xyz_spacing(row)
     pos = get_patient_position(row)[:, 1:]
