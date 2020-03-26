@@ -13,7 +13,6 @@ __all__ = 'read_rtstruct', 'contours_to_image'
 
 def _read_contour_sequence(dataset: Dataset) -> dict:
     """Extract a single contour from contour's Dataset."""
-
     contour_sequence_dict = dict()
 
     if not hasattr(dataset, 'ContourSequence'):
@@ -34,7 +33,6 @@ def _read_contour_sequence(dataset: Dataset) -> dict:
 
 def read_rtstruct(row: pd.Series) -> dict:
     """Read dicom file with RTStruture."""
-
     if row.InstanceNumbers is None:
         raise AttributeError('Contour does not have associated image.')
 
@@ -60,9 +58,8 @@ def read_rtstruct(row: pd.Series) -> dict:
     return contours_result
 
 
-def contours_to_image(row:pd.Series, contours_dict:dict) -> dict:
+def contours_to_image(row: pd.Series, contours_dict: dict) -> dict:
     """Moves contours coordinates to image space."""
-
     OM = get_fixed_orientation_matrix(row)
     xyz = get_xyz_spacing(row)
     pos = get_patient_position(row)[:, 1:]

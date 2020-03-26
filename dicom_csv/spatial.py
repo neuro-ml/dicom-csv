@@ -87,7 +87,6 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
 def restore_slice_locations(dicom_metadata: pd.Series):
     """Restore SliceLocation from ImagePositionPatient,
     as if orientation matrix was Identity"""
-
     pos = get_patient_position(dicom_metadata)
     instances, coords = pos[:, 0], pos[:, 1:]
     OM, main_plain_axis = get_fixed_orientation_matrix(dicom_metadata, return_main_plain_axis=True)

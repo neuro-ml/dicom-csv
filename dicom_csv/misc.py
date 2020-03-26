@@ -55,19 +55,20 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[b
     return normalize_orientation(x, row)
 
 
-def construct_nifti(reference_row: pd.Series, array=None):
+def construct_nifti(reference_row: pd.Series, array=None, base_path: PathLike = None,):
     """Construct a nifti image from dicoms.
 
     If ``array`` is not None, image metadata is taken from reference_row,
     and image tensor is an array. This is mainly for saving contour masks.
 
     Notes:
-    ImagePositionPatient_x,y,z; PixelSpacing_x,y; SpacingBetweenSlices; ImageShape are stored
+    Metadata stored in NIFTI:
+    ImagePositionPatient_x,y,z; PixelSpacing_x,y; SpacingBetweenSlices; ArrayShape
     """
     from nibabel import Nifti1Header, Nifti1Image
 
     if array is None:
-        array = load_series(reference_row, orientation=False)
+        array = load_series(reference_row, orientation=False, base_path=base_path)
 
     M = get_orientation_matrix(reference_row)
     offset = get_patient_position(reference_row)[0, 1:]
