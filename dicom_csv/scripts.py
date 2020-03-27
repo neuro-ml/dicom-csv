@@ -29,14 +29,14 @@ def collect_contours():
 
     args = parser.parse_args()
 
-    data_csv = join_tree(args.top)
+    data_csv = join_tree(args.folder, relative=False)
     rtstruct_csv = collect_rtstruct(data_csv)
-
+    print(rtstruct_csv)
     result = dict()
     for rtstruct in rtstruct_csv.iterrows():
         patient_id = rtstruct[1].PatientID
         mask_suid = rtstruct[1].SeriesInstanceUID
-        reference_suid = rtstruct[1].ReferenceInstanceSeriesUID
+        reference_suid = rtstruct[1].ReferenceSeriesInstanceUID
         contours_dict = read_rtstruct(rtstruct[1])
         result[patient_id] = (reference_suid, mask_suid, contours_dict)
 
