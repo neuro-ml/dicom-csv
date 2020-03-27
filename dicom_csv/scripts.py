@@ -22,8 +22,18 @@ def join_to_csv():
 
 def collect_contours():
     """Help function for high-level debugging."""
+
+    example = """usage:
+  collect_contours /path/to/subject_folder /path/to/file.npy
+
+load results:
+  np.load(/path/to/file.npy).items()
+    """
+
     parser = argparse.ArgumentParser(
-        description='Saves json with contours from subject folder.')
+        description='Saves json with contours from subject folder.',
+        epilog=example,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('folder', help='subject folder')
     parser.add_argument('output', help='path to the output file.')
 
@@ -38,6 +48,10 @@ def collect_contours():
         reference_suid = rtstruct[1].ReferenceSeriesInstanceUID
         contours_dict = read_rtstruct(rtstruct[1])
 
-        result[str(patient_id)] = (reference_suid, mask_suid, contours_dict)
+        result[str(patient_id)] = {
+                                      'ReferenceSeriesInstanceUID': reference_suid,
+                                      'SeriesInstanceUID': mask_suid,
+                                      'Contours': contours_dict
+        }
 
     np.save(args.output, result)
