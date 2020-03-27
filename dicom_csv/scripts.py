@@ -2,7 +2,8 @@ import argparse
 import json
 
 from dicom_csv import join_tree
-from dicom_csv.rtstruct import read_rtstruct, collect_rtstruct
+from dicom_csv.rtstruct.contour import read_rtstruct
+from dicom_csv.rtstruct.csv import collect_rtstruct
 
 
 def join_to_csv():
