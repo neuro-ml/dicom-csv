@@ -7,6 +7,9 @@ from dicom_csv.aggregation import *
 
 __all__ = 'collect_rtstruct'
 
+by =('PatientID', 'SeriesInstanceUID', 'StudyInstanceUID',
+     'PathToFolder')
+
 
 def collect_rtstruct(df, ):
     # TODO: Add relative path option, RTSTRUCT detection
@@ -18,7 +21,7 @@ def collect_rtstruct(df, ):
     contours['ReferenceSeriesInstanceUID'] = contours[['PathToFolder', 'FileName']] \
         .apply(lambda x: _get_series_instance_uid(jp(x[0], x[1])), axis=1)
 
-    temp = aggregate_images(normalize_identifiers(df))
+    temp = aggregate_images(normalize_identifiers(df), by=by)
     temp = temp[['ImageOrientationPatient0', 'ImageOrientationPatient1',
                  'ImageOrientationPatient2', 'ImageOrientationPatient3',
                  'ImageOrientationPatient4', 'ImageOrientationPatient5',

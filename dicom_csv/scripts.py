@@ -1,5 +1,5 @@
 import argparse
-import json
+import numpy as np
 
 from dicom_csv import join_tree
 from dicom_csv.rtstruct.contour import read_rtstruct
@@ -31,15 +31,13 @@ def collect_contours():
 
     data_csv = join_tree(args.folder, relative=False)
     rtstruct_csv = collect_rtstruct(data_csv)
-    print(rtstruct_csv)
     result = dict()
     for rtstruct in rtstruct_csv.iterrows():
         patient_id = rtstruct[1].PatientID
         mask_suid = rtstruct[1].SeriesInstanceUID
         reference_suid = rtstruct[1].ReferenceSeriesInstanceUID
         contours_dict = read_rtstruct(rtstruct[1])
-        result[patient_id] = (reference_suid, mask_suid, contours_dict)
 
-    with open(args.output, 'w') as f:
-        json.dump(result, f)
+        result[str(patient_id)] = (reference_suid, mask_suid, contours_dict)
 
+    np.save(args.output, result)
