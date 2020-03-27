@@ -33,6 +33,7 @@ setup(
     entry_points={
         'console_scripts': [
             'dicom-csv = dicom_csv.scripts:join_to_csv',
+            'collect_contours = dicom_csv.scripts:collect_contours',
         ],
     },
 )
