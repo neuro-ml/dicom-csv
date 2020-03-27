@@ -1,4 +1,4 @@
-import os.path.join as jp
+from os.path import join as jp
 
 from .meta import _get_series_instance_uid
 
