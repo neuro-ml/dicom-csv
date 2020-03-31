@@ -42,11 +42,12 @@ def get_file_meta(path: PathLike, force: bool = False) -> dict:
         dc = dcmread(str(path))
         result['NoError'] = True
     except errors.InvalidDicomError:
-        result['NoError'] = False
         if force:
+            result['NoError'] = True
             dc = dcmread(str(path), force=force)
             dc.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
         else:
+            result['NoError'] = False
             return result
     except (OSError, NotImplementedError, AttributeError):
         result['NoError'] = False
