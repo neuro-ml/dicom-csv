@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from pydicom import valuerep, errors, dcmread
+from pydicom.uid import ImplicitVRLittleEndian
 
 from .utils import PathLike
 
@@ -20,7 +21,7 @@ def _throw(e):
     raise e
 
 
-def get_file_meta(path: PathLike) -> dict:
+def get_file_meta(path: PathLike, force: bool = False) -> dict:
     """
     Get a dict containing the metadata from the DICOM file located at ``path``.
 
@@ -40,7 +41,14 @@ def get_file_meta(path: PathLike) -> dict:
     try:
         dc = dcmread(str(path))
         result['NoError'] = True
-    except (errors.InvalidDicomError, OSError, NotImplementedError, AttributeError):
+    except errors.InvalidDicomError:
+        result['NoError'] = False
+        if force:
+            dc = dcmread(str(path), force=force)
+            dc.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+        else:
+            return result
+    except (OSError, NotImplementedError, AttributeError):
         result['NoError'] = False
         return result
 
@@ -78,7 +86,7 @@ def get_file_meta(path: PathLike) -> dict:
 
 
 def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True,
-              verbose: int = 0) -> pd.DataFrame:
+              verbose: int = 0, force: bool = False) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
 
@@ -93,6 +101,8 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
             | 0 - no progressbar
             | 1 - progressbar with iterations count
             | 2 - progressbar with filenames
+    force
+        if True, read dicom files even in case of errors.
 
     References
     ----------
@@ -128,7 +138,7 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
             if verbose > 1:
                 bar.set_description(jp(rel_path, file))
 
-            entry = get_file_meta(jp(root, file))
+            entry = get_file_meta(jp(root, file), force=force)
             entry['PathToFolder'] = rel_path if relative else root
             entry['FileName'] = file
             result.append(entry)
