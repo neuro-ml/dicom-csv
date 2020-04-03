@@ -18,7 +18,8 @@ class Default:
 
 
 # TODO: move to pathlib
-def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[bool, None] = Default) -> np.ndarray:
+def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[bool, None] = Default,
+                scaling: bool = None) -> np.ndarray:
     """
     Loads an image based on its ``row`` in the metadata dataframe.
 
@@ -42,20 +43,23 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[b
         files = map(itemgetter(1), sorted(zip_equal(split_floats(row.InstanceNumbers), files)))
 
     x = np.stack([dcmread(jp(folder, file)).pixel_array for file in files], axis=-1)
-    if contains_info(row, 'RescaleSlope'):
+
+    if scaling and not contains_info(row, 'RescaleSlope', 'RescaleIntercept'):
+        raise ValueError('Not enough information for scaling.')
+    if scaling is not False and contains_info(row, 'RescaleSlope'):
         x = x * row.RescaleSlope
-    if contains_info(row, 'RescaleIntercept'):
+    if scaling is not False and contains_info(row, 'RescaleIntercept'):
         x = x + row.RescaleIntercept
 
     if orientation is None:
         orientation = contains_info(row, *ORIENTATION)
-    if not orientation:
-        return x
+    if orientation:
+        x = normalize_orientation(x, row)
 
-    return normalize_orientation(x, row)
+    return x
 
 
-def construct_nifti(reference_row: pd.Series, array=None, base_path: PathLike = None,):
+def construct_nifti(reference_row: pd.Series, array=None, base_path: PathLike = None):
     """Construct a nifti image from dicoms.
 
     If ``array`` is not None, image metadata is taken from reference_row,

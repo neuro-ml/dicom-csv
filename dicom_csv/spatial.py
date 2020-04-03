@@ -5,7 +5,7 @@ from .utils import *
 __all__ = [
     'get_orientation_matrix', 'get_orientation_axis', 'restore_orientation_matrix',
     'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position',
-    'get_fixed_orientation_matrix', 'get_xyz_spacing'
+    'get_fixed_orientation_matrix', 'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation'
 ]
 
 
@@ -123,7 +123,11 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True) -> float:
     Computes the spacing between slices for a dicom series.
     Add slice restoration in case of non diagonal rotation matrix
     """
-    instances, locations = restore_slice_locations(dicom_metadata)
+    try:
+        instances, locations = order_slice_locations(dicom_metadata)
+    except ValueError:
+        instances, locations = restore_slice_locations(dicom_metadata)
+
     dx, dy = np.diff([instances, locations], axis=1)
     spacing = dy / dx
 
@@ -142,6 +146,22 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True) -> float:
     return np.abs(spacing.mean())
 
 
+def get_axes_permutation(row: pd.Series):
+    return np.abs(get_orientation_matrix(row)).argmax(axis=0)
+
+
+def get_flipped_axes(row: pd.Series):
+    flips = []
+    m = get_orientation_matrix(row)
+    for i, j in enumerate(np.abs(m).argmax(axis=1)):
+        flips.append(m[i, j] < 0)
+
+    if contains_info(row, 'InstanceNumbers', 'SliceLocations') and should_flip(row):
+        flips[-1] = not flips[-1]
+
+    return [axis for axis, flip in enumerate(flips) if flip]
+
+
 def normalize_orientation(image: np.ndarray, row: pd.Series):
     """
     Transposes and flips the ``image`` to standard (Coronal, Sagittal, Axial) orientation.
@@ -154,17 +174,11 @@ def normalize_orientation(image: np.ndarray, row: pd.Series):
     if not contains_info(row, *ORIENTATION):
         raise ValueError('There is no enough metadata to standardize the image orientation.')
 
-    m = get_orientation_matrix(row)
     if np.isnan(get_orientation_matrix(row)).any():
         raise ValueError('There is no enough metadata to standardize the image orientation.')
 
-    if contains_info(row, 'InstanceNumbers', 'SliceLocations') and should_flip(row):
-        image = image[..., ::-1]
-
-    for i, j in enumerate(np.abs(m).argmax(axis=1)):
-        if m[i, j] < 0:
-            image = np.flip(image, axis=i)
-    return image.transpose(*np.abs(m).argmax(axis=0))
+    image = np.flip(image, axis=get_flipped_axes(row))
+    return image.transpose(*get_axes_permutation(row))
 
 
 def get_patient_position(row: pd.Series):

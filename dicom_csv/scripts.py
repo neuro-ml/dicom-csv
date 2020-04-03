@@ -17,7 +17,7 @@ def join_to_csv():
                         help='whether to show a progressbar.')
     args = parser.parse_args()
 
-    join_tree(args.top, relative=not args.absolute, verbose=args.verbose).to_csv(args.output)
+    join_tree(args.top, relative=not args.absolute, verbose=args.verbose).to_csv(args.output, index=False)
 
 
 def collect_contours():
@@ -49,9 +49,9 @@ load results:
         contours_dict = read_rtstruct(rtstruct[1])
 
         result[str(patient_id)] = {
-                                      'ReferenceSeriesInstanceUID': reference_suid,
-                                      'SeriesInstanceUID': mask_suid,
-                                      'Contours': contours_dict
+            'ReferenceSeriesInstanceUID': reference_suid,
+            'SeriesInstanceUID': mask_suid,
+            'Contours': contours_dict
         }
 
     np.save(args.output, result)
