@@ -118,14 +118,19 @@ def should_flip(dicom_metadata: pd.Series):
     return flip != direction
 
 
-def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True) -> float:
+def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True,
+                      restore_slice_location=False) -> float:
     """
     Computes the spacing between slices for a dicom series.
     Add slice restoration in case of non diagonal rotation matrix
+
+    Warnings
+    --------
+    restore_slice_location will be removed!
     """
-    try:
+    if not restore_slice_location:
         instances, locations = order_slice_locations(dicom_metadata)
-    except ValueError:
+    else:
         instances, locations = restore_slice_locations(dicom_metadata)
 
     dx, dy = np.diff([instances, locations], axis=1)
