@@ -61,7 +61,7 @@ def read_rtstruct(row: pd.Series) -> dict:
 def contours_to_image(row: pd.Series, contours_dict: dict) -> dict:
     """Moves contours coordinates to image space."""
     OM = get_fixed_orientation_matrix(row)
-    xyz = get_xyz_spacing(row)
+    xyz = get_xyz_spacing(row, restore_slice_location=True)
     pos = get_patient_position(row)[:, 1:]
 
     contours_image_dict = dict()

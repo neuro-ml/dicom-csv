@@ -198,7 +198,7 @@ def get_patient_position(row: pd.Series):
     return pos
 
 
-def get_xyz_spacing(row: pd.Series):
+def get_xyz_spacing(row: pd.Series, restore_slice_location=False):
     """Returns pixel spacing + distance between slices (between their centers),
     in an order consistent with ImagePositionPatient's columns order."""
     _, indices = get_fixed_orientation_matrix(row, return_main_plain_axis=True)
@@ -208,5 +208,5 @@ def get_xyz_spacing(row: pd.Series):
 
     xyz[indices[0]] = xy[0]
     xyz[indices[1]] = xy[1]
-    xyz[index_z] = get_slice_spacing(row)
+    xyz[index_z] = get_slice_spacing(row, restore_slice_location=restore_slice_location)
     return xyz
