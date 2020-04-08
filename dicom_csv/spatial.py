@@ -126,7 +126,7 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True,
 
     Warnings
     --------
-    restore_slice_location will be removed!
+    restore_slice_location parameter will be removed!
     """
     if not restore_slice_location:
         instances, locations = order_slice_locations(dicom_metadata)
