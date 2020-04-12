@@ -20,7 +20,7 @@ def get_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
     return result
 
 
-def get_fixed_orientation_matrix(row, return_main_plain_axis=False):
+def get_fixed_orientation_matrix(row, return_main_plain_axis=False, max_delta=0.05):
     """Sometimes Orientation Matrix is stored in row-wise fashion instead of column-wise.
     Here we check this and return column-wise OM"""
 
@@ -28,7 +28,7 @@ def get_fixed_orientation_matrix(row, return_main_plain_axis=False):
 
     def check(d):
         """Two out of three coordinates should be equal across slices."""
-        return (d < 0.05).sum() == 2
+        return (d < max_delta).sum() == 2
 
     coords = get_patient_position(row)[:, 1:]
     OM = get_orientation_matrix(row)
@@ -38,7 +38,7 @@ def get_fixed_orientation_matrix(row, return_main_plain_axis=False):
         delta = np.max(new_coords, axis=0) - np.min(new_coords, axis=0)
         if check(delta):
             if return_main_plain_axis:
-                return om, np.where(delta < 0.05)[0]
+                return om, np.where(delta < max_delta)[0]
             return om
     raise ValueError('ImagePositionPatient coordinates are inconsistent.')
 
