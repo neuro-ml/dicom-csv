@@ -118,11 +118,14 @@ def should_flip(dicom_metadata: pd.Series):
     return flip != direction
 
 
-def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True,
-                      restore_slice_location=False) -> float:
+def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True, max_delta: float = 0.01,
+                      *, restore_slice_location=False) -> float:
     """
     Computes the spacing between slices for a dicom series.
     Add slice restoration in case of non diagonal rotation matrix
+
+    If `check` is True - the spacing will be additionally checked for consistency,
+    so that the difference between spacings doesn't exceed `max_delta`.
 
     Warnings
     --------
@@ -142,9 +145,10 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True,
 
         return np.nan
 
-    if spacing.max() - spacing.min() > 0.01:
+    delta = spacing.max() - spacing.min()
+    if delta > max_delta:
         if check:
-            raise ValueError(f'Seems like this series has an inconsistent slice spacing: {spacing}.')
+            raise ValueError(f'Seems like this series has an inconsistent slice spacing, max difference {delta}.')
 
         return np.nan
 

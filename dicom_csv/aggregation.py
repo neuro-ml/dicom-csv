@@ -15,7 +15,7 @@ def _remove_dots(x):
 
 AGGREGATE_BY = (
     'PatientID', 'SeriesInstanceUID', 'StudyInstanceUID',
-    'PathToFolder', 'PixelArrayShape', 'SequenceName'
+    'PathToFolder', 'PixelArrayShape',
 )
 
 

@@ -15,9 +15,17 @@ def join_to_csv():
                         help='whether the paths in the dataframe should be `absolute` or relative to `top`.')
     parser.add_argument('-v', '--verbose', default=0, action='count',
                         help='whether to show a progressbar.')
+    parser.add_argument('-f', '--force', default=False, action='store_true',
+                        help='whether to fix the endianness tag.')
     args = parser.parse_args()
 
-    join_tree(args.top, relative=not args.absolute, verbose=args.verbose).to_csv(args.output, index=False)
+    df = join_tree(args.top, relative=not args.absolute, verbose=args.verbose, force=args.force)
+    df.to_csv(args.output, index=False)
+    if args.verbose:
+        size = len(df)
+        errors = size - df.NoError.sum()
+        percentage = 100 * errors / (size or 1)
+        print(f'\n{errors} files ({percentage:.2f}%) were opened with errors.')
 
 
 def collect_contours():

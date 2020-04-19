@@ -1,5 +1,6 @@
 """Contains functions for gathering metadata from individual DICOM files or entire directories."""
 import os
+import struct
 from os.path import join as jp
 from typing import Sequence
 
@@ -21,6 +22,18 @@ def _throw(e):
     raise e
 
 
+def read_dicom(path: PathLike, force: bool = False):
+    try:
+        return True, dcmread(str(path))
+    except errors.InvalidDicomError:
+        if force:
+            dc = dcmread(str(path), force=True)
+            dc.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+            return False, dc
+
+        raise
+
+
 def get_file_meta(path: PathLike, force: bool = False) -> dict:
     """
     Get a dict containing the metadata from the DICOM file located at ``path``.
@@ -39,17 +52,8 @@ def get_file_meta(path: PathLike, force: bool = False) -> dict:
     result = {}
 
     try:
-        dc = dcmread(str(path))
-        result['NoError'] = True
-    except errors.InvalidDicomError:
-        if force:
-            result['NoError'] = True
-            dc = dcmread(str(path), force=force)
-            dc.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
-        else:
-            result['NoError'] = False
-            return result
-    except (OSError, NotImplementedError, AttributeError):
+        result['NoError'], dc = read_dicom(path, force)
+    except (errors.InvalidDicomError, struct.error, OSError, NotImplementedError, AttributeError, KeyError):
         result['NoError'] = False
         return result
 
@@ -103,7 +107,7 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
             | 1 - progressbar with iterations count
             | 2 - progressbar with filenames
     force
-        if True, read dicom files even in case of errors.
+        if True, fix the missing endianness tag during reading.
 
     References
     ----------
