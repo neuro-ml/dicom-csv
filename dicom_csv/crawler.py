@@ -29,7 +29,7 @@ def read_dicom(path: PathLike, force: bool = False):
         if force:
             dc = dcmread(str(path), force=True)
             dc.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
-            return False, dc
+            return True, dc
 
         raise
 
