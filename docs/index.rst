@@ -11,3 +11,4 @@ Contents
 
     dicom_csv
     tutorials/dicom
+    tutorials/rtstruct.rst
