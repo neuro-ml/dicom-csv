@@ -15,7 +15,7 @@ from .utils import PathLike
 __all__ = 'get_file_meta', 'join_tree'
 
 SERIAL = {'ImagePositionPatient', 'ImageOrientationPatient', 'PixelSpacing'}
-PERSON_CLASS = (valuerep.PersonName3, valuerep.PersonNameBase)
+PERSON_CLASS = valuerep.PersonName
 
 
 def _throw(e):
