@@ -64,6 +64,9 @@ def get_file_meta(path: PathLike, force: bool = False) -> dict:
     except ValueError:
         has_px = True
         result['NoError'] = False
+    except RuntimeError:
+        has_px = True
+        result['NoError'] = False
 
     result['HasPixelArray'] = has_px
     if has_px and result['NoError']:
