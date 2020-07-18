@@ -1,5 +1,5 @@
 nibabel
-pydicom
+pydicom==2.*
 pandas
 numpy
 tqdm
