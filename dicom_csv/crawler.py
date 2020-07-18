@@ -34,7 +34,7 @@ def read_dicom(path: PathLike, force: bool = False):
         raise
 
 
-def get_file_meta(path: PathLike, force: bool = False) -> dict:
+def get_file_meta(path: PathLike, force: bool = False, read_pixel_array: bool = True) -> dict:
     """
     Get a dict containing the metadata from the DICOM file located at ``path``.
 
@@ -57,20 +57,22 @@ def get_file_meta(path: PathLike, force: bool = False) -> dict:
         result['NoError'] = False
         return result
 
-    try:
-        has_px = hasattr(dc, 'pixel_array')
-    except (TypeError, NotImplementedError):
-        has_px = False
-    except ValueError:
-        has_px = True
-        result['NoError'] = False
-    except RuntimeError:
-        has_px = True
-        result['NoError'] = False
+    if read_pixel_array:
+        try:
+            has_px = hasattr(dc, 'pixel_array')
+        except (TypeError, NotImplementedError):
+            has_px = False
+        except ValueError:
+            has_px = True
+            result['NoError'] = False
+        except RuntimeError:
+            has_px = True
+            result['NoError'] = False
 
-    result['HasPixelArray'] = has_px
-    if has_px and result['NoError']:
-        result['PixelArrayShape'] = ','.join(map(str, dc.pixel_array.shape))
+        result['HasPixelArray'] = has_px
+
+        if has_px and result['NoError']:
+            result['PixelArrayShape'] = ','.join(map(str, dc.pixel_array.shape))
 
     for attr in dc.dir():
         try:
@@ -94,7 +96,7 @@ def get_file_meta(path: PathLike, force: bool = False) -> dict:
 
 
 def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True,
-              verbose: int = 0, force: bool = False) -> pd.DataFrame:
+              verbose: int = 0, force: bool = False, read_pixel_array: bool = True) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
 
@@ -112,6 +114,10 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
     force
         if True, fix the missing endianness tag during reading.
 
+    read_pixel_array
+        if True, crawler will add information about DICOM pixel_array, False significantly increases crawling time,
+        default True.
+
     References
     ----------
     See the :doc:`tutorials/dicom` tutorial for more details.
@@ -120,8 +126,8 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
     -----
     The following columns are added:
         | NoError: whether an exception was raised during reading the file.
-        | HasPixelArray: (if NoError is True) whether the file contains a pixel array.
-        | PixelArrayShape: (if HasPixelArray is True) the shape of the pixel array.
+        | HasPixelArray:(if NoError is True) whether the file contains a pixel array(added if read_pixel_array is True).
+        | PixelArrayShape: (if HasPixelArray is True) the shape of the pixel array (added if read_pixel_array is True).
         | PathToFolder
         | FileName
 
@@ -146,7 +152,7 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
             if verbose > 1:
                 bar.set_description(jp(rel_path, file))
 
-            entry = get_file_meta(jp(root, file), force=force)
+            entry = get_file_meta(jp(root, file), force=force, read_pixel_array=read_pixel_array)
             entry['PathToFolder'] = rel_path if relative else root
             entry['FileName'] = file
             result.append(entry)
