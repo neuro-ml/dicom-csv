@@ -29,7 +29,7 @@ def collect_rtstruct(df, ):
                  'InstanceNumbers', 'SOPInstanceUIDs',
                  'ImagePositionPatient0s', 'ImagePositionPatient1s',
                  'ImagePositionPatient2s', 'SeriesInstanceUID',
-                 'PixelArrayShape', 'SlicesCount']]
+                 'PixelArrayShape', 'SlicesCount', 'SliceLocations']]
 
     contours = pd.merge(contours, temp,
                         how='left',
