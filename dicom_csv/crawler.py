@@ -38,12 +38,26 @@ def get_file_meta(path: PathLike, force: bool = False, read_pixel_array: bool = 
     """
     Get a dict containing the metadata from the DICOM file located at ``path``.
 
+    Parameters
+    ---
+
+    path - PathLike,
+        full path to file
+
+    force - bool,
+        pydicom.filereader.dcmread force parameter, default is False
+
+    read_pixel_array - bool,
+        if True, crawler will add information about DICOM pixel_array, False significantly increases crawling time,
+        default is True.
+
     Notes
-    -----
+    ---
     The following keys are added:
         | NoError: whether an exception was raised during reading the file.
         | HasPixelArray: (if NoError is True) whether the file contains a pixel array.
         | PixelArrayShape: (if HasPixelArray is True) the shape of the pixel array.
+
 
     For some formats the following packages might be required:
         >>> conda install -c glueviz gdcm # Python 3.5 and 3.6
@@ -95,28 +109,30 @@ def get_file_meta(path: PathLike, force: bool = False, read_pixel_array: bool = 
     return result
 
 
-def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True,
-              verbose: int = 0, force: bool = False, read_pixel_array: bool = True) -> pd.DataFrame:
+def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True, verbose: int = 0,
+              get_file_meta=get_file_meta) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
 
     Parameters
-    ----------
-    top
-    ignore_extensions
-    relative
-        whether the ``PathToFolder`` attribute should be relative to ``top``.
-    verbose
+    ---
+    top - PathLike,
+        path to crawled folder
+
+    ignore_extensions - Sequence,
+        list of extensions to skip during crawling
+
+    relative - bool,
+        whether the ``PathToFolder`` attribute should be relative to ``top`` default is True.
+
+    verbose - int,
         the verbosity level:
             | 0 - no progressbar
             | 1 - progressbar with iterations count
             | 2 - progressbar with filenames
-    force
-        if True, fix the missing endianness tag during reading.
 
-    read_pixel_array
-        if True, crawler will add information about DICOM pixel_array, False significantly increases crawling time,
-        default True.
+    get_file_meta - function,
+        function to use to collect metadata from the file, default is dicom_csv.crawler.get_file_meta.
 
     References
     ----------
@@ -152,7 +168,7 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
             if verbose > 1:
                 bar.set_description(jp(rel_path, file))
 
-            entry = get_file_meta(jp(root, file), force=force, read_pixel_array=read_pixel_array)
+            entry = get_file_meta(jp(root, file))
             entry['PathToFolder'] = rel_path if relative else root
             entry['FileName'] = file
             result.append(entry)

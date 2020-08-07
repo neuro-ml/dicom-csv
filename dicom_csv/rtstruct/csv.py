@@ -7,7 +7,7 @@ from dicom_csv.aggregation import *
 
 __all__ = 'collect_rtstruct'
 
-by =('PatientID', 'SeriesInstanceUID', 'StudyInstanceUID',
+by = ('PatientID', 'SeriesInstanceUID', 'StudyInstanceUID',
      'PathToFolder')
 
 
