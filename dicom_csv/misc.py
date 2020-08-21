@@ -81,12 +81,13 @@ def construct_nifti(reference_row: pd.Series, array=None, base_path: PathLike = 
     OM = np.eye(4)
     OM[:3, :3] = M
     OM[:3, 3] = offset
+    OM = OM * np.diag(np.hstack((pixel_spacings, slice_spacing)))
     data_shape = [int(s) for s in reference_row['PixelArrayShape'].split(',')]
     data_shape.append(reference_row['SlicesCount'])
 
+    # Looks like Nifti1Image overwrites OM if it is provided in header
+    # see https://github.com/nipy/nibabel/blob/master/nibabel/nifti1.py Nifti1Header.set_qform()
     header = Nifti1Header()
     header.set_data_shape(data_shape)
-    header.set_zooms(np.hstack((pixel_spacings, slice_spacing)).astype(np.float32))
-    header.set_sform(OM)
-    # header.set_dim_info(slice=2) # TODO
+
     return Nifti1Image(array, OM, header=header)
