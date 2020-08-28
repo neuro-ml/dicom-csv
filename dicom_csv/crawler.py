@@ -34,7 +34,7 @@ def read_dicom(path: PathLike, force: bool = False):
         raise
 
 
-def get_file_meta(path: PathLike, force: bool = False, read_pixel_array: bool = True) -> dict:
+def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = True) -> dict:
     """
     Get a dict containing the metadata from the DICOM file located at ``path``.
 
