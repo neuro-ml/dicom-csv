@@ -110,7 +110,7 @@ def get_file_meta(path: PathLike, force: bool = False, read_pixel_array: bool = 
 
 
 def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True, verbose: int = 0,
-              get_file_meta=get_file_meta) -> pd.DataFrame:
+              get_attrs=None) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
 
@@ -131,8 +131,8 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
             | 1 - progressbar with iterations count
             | 2 - progressbar with filenames
 
-    get_file_meta - function,
-        function to use to collect metadata from the file, default is dicom_csv.crawler.get_file_meta.
+    get_attrs - function,
+        function to use to collect metadata from the file, if None dicom_csv.crawler.get_file_meta is used.
 
     References
     ----------
@@ -155,6 +155,9 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
         if not extension.startswith('.'):
             raise ValueError(f'Each extension must start with a dot: "{extension}".')
 
+    if get_attrs is None:
+        get_attrs = get_file_meta
+
     result = []
     bar = tqdm(disable=not verbose)
     for root, _, files in os.walk(top, onerror=_throw, followlinks=True):
@@ -168,7 +171,7 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
             if verbose > 1:
                 bar.set_description(jp(rel_path, file))
 
-            entry = get_file_meta(jp(root, file))
+            entry = get_attrs(jp(root, file))
             entry['PathToFolder'] = rel_path if relative else root
             entry['FileName'] = file
             result.append(entry)
