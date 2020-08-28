@@ -59,7 +59,15 @@ def read_rtstruct(row: pd.Series) -> dict:
 
 
 def contours_to_image(row: pd.Series, contours_dict: dict) -> dict:
-    """Moves contours coordinates to image space."""
+    """Moves contours coordinates to image space.
+
+    Returns
+    ---
+
+    contours_image_dict - dict,
+        key - slice number
+        value - list of numpy.arrays containing disjoint contours (as x,y coordinates)
+    """
     OM = get_fixed_orientation_matrix(row)
     xyz = get_xyz_spacing(row, restore_slice_location=True)
     pos = get_patient_position(row)[:, 1:]
@@ -72,7 +80,7 @@ def contours_to_image(row: pd.Series, contours_dict: dict) -> dict:
             contours_image_dict[roi_name][slice_number] = []
             for coords in coordinates_list:
                 new_coords = (coords - pos[slice_number]).dot(OM) / xyz
-                contours_image_dict[roi_name][slice_number].append(new_coords)
+                contours_image_dict[roi_name][slice_number].append(new_coords[:, :2])
 
     return contours_image_dict
 
