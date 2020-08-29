@@ -1,5 +1,6 @@
 from pydicom import dcmread
 from pydicom.dataset import Dataset
+from skimage.draw import polygon
 
 import numpy as np
 import pandas as pd
@@ -110,6 +111,34 @@ def image_to_contours(row: pd.Series, name2roi: dict):
             image_contours_dict[roi_name][1].append(((coords_xyz * xyz).dot(np.linalg.inv(OM)) + pos[slice_number]))
 
     return image_contours_dict
+
+
+def contour_to_mask(contours: dict, size: tuple, swap_axes=False):
+    """Generates 0/1 mask from contours.
+
+    Parameters
+    ---
+
+    contours - dict,
+        key - slice number
+        value - list of numpy.arrays consist of xy contours coordinates
+
+    size - tuple,
+        size of the corresponding image
+
+    swap_axes - bool,
+        in some cases
+    """
+    i0, i1 = 0, 1
+    if swap_axes:
+        i0, i1 = i1, i0
+
+    mask = np.zeros(size)
+    for key in contours.keys():
+        for i, elem in enumerate(contours[key]):
+            yy, xx = polygon(np.abs(elem[:, i0]), np.abs(elem[:, i1]), (size[0], size[1]))
+            mask[xx, yy, key] = 1  # Because origin is in top left corner
+    return mask
 
 
 def reformat_to_dicts(contours):
