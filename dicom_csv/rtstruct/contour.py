@@ -81,11 +81,11 @@ def contours_to_image(row: pd.Series, contours_dict: dict) -> dict:
             contours_image_dict[roi_name][slice_number] = []
             for coords in coordinates_list:
                 new_coords = (coords - pos[slice_number]).dot(OM) / xyz
-                # After rotation 1 out of 3 coordinates will be the same for all points of the curve,
-                # append only remaining coordinates.
+                # After rotation 1 out of 3 coordinates will be the same for all points of the contour (z position of
+                # the slice), append only remaining coordinates.
                 _s = np.zeros(new_coords.shape[0]-1)
-                indx = np.where([not np.allclose(_s, ci) for ci in np.diff(new_coords, axis=0).T])[0]
-                contours_image_dict[roi_name][slice_number].append(new_coords.T[indx].T)
+                ind = np.where([not np.allclose(_s, ci) for ci in np.diff(new_coords, axis=0).T])[0]
+                contours_image_dict[roi_name][slice_number].append(new_coords.T[ind].T)
 
     return contours_image_dict
 

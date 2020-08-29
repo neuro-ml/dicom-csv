@@ -6,6 +6,7 @@ from os.path import join as jp
 import numpy as np
 from pydicom import dcmread
 
+from dicom_csv.rtstruct.contour import read_rtstruct, contours_to_image, contour_to_mask
 from .spatial import *
 from .utils import *
 
@@ -57,6 +58,20 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[b
         x = normalize_orientation(x, row)
 
     return x
+
+
+def load_masks_from_rtstruct(rtstruct_row: pd.Series, contour_name=None) -> dict:
+    contours_world = read_rtstruct(rtstruct_row)
+    contours_image = contours_to_image(rtstruct_row, contours_world)
+
+    if contour_name is not None:
+        try:
+            return contour_to_mask(contours_image[contour_name], size=())
+        except KeyError:
+            print(f'Contour {contour_name} is not presented in RTStruct.')
+    for contour_name, contour in contours_image.items():
+
+    pass
 
 
 def construct_nifti(reference_row: pd.Series, array=None, base_path: PathLike = None):

@@ -214,3 +214,9 @@ def get_xyz_spacing(row: pd.Series, restore_slice_location=False):
     xyz[indices[1]] = xy[1]
     xyz[index_z] = get_slice_spacing(row, restore_slice_location=restore_slice_location)
     return xyz
+
+
+def get_image_size(row: pd.Series) -> tuple:
+    """Returns image size in voxels."""
+    x, y = tuple(map(int, row.PixelArrayShape.split(',')))
+    return x, y, int(row.SlicesCount)
