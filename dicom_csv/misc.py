@@ -8,6 +8,7 @@ from pydicom import dcmread
 
 from dicom_csv.rtstruct.contour import read_rtstruct, contours_to_image, contour_to_mask
 from .spatial import *
+from .spatial import get_image_size
 from .utils import *
 
 __all__ = 'load_series',
@@ -60,18 +61,32 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[b
     return x
 
 
-def load_masks_from_rtstruct(rtstruct_row: pd.Series, contour_name=None) -> dict:
+def load_rtstruct(rtstruct_row: pd.Series, contour_name: str = None) -> dict:
+    """Loads all masks from RTStruct.
+
+    Parameters
+    ---
+    rtstruct_row - pandas.Series,
+        single row from a DataFrame after dicom_csv.rtstruct.collect_rtstruct
+
+    contour_name - str,
+        name of the contour to return, if None, returns dictionary with all masks, default is None.
+    """
+
     contours_world = read_rtstruct(rtstruct_row)
     contours_image = contours_to_image(rtstruct_row, contours_world)
-
+    size = get_image_size(rtstruct_row)
     if contour_name is not None:
         try:
-            return contour_to_mask(contours_image[contour_name], size=())
+            return contour_to_mask(contours_image[contour_name], size=size)
         except KeyError:
             print(f'Contour {contour_name} is not presented in RTStruct.')
-    for contour_name, contour in contours_image.items():
 
-    pass
+    masks = dict()
+    for contour_name, contour in contours_image.items():
+        masks[contour_name] = contour_to_mask(contours_image[contour_name], size=size)
+
+    return masks
 
 
 def construct_nifti(reference_row: pd.Series, array=None, base_path: PathLike = None):
@@ -97,8 +112,7 @@ def construct_nifti(reference_row: pd.Series, array=None, base_path: PathLike = 
     OM[:3, :3] = M
     OM[:3, 3] = offset
     OM = OM * np.diag(np.hstack((pixel_spacings, slice_spacing)))
-    data_shape = [int(s) for s in reference_row['PixelArrayShape'].split(',')]
-    data_shape.append(reference_row['SlicesCount'])
+    data_shape = get_image_size(reference_row)
 
     # Looks like Nifti1Image overwrites OM if it is provided in header
     # see https://github.com/nipy/nibabel/blob/master/nibabel/nifti1.py Nifti1Header.set_qform()

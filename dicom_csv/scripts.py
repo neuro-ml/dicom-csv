@@ -37,7 +37,7 @@ def collect_contours():
 load results:
   np.load(/path/to/file.npy).items()
     """
-
+    # TODO: remove this function
     parser = argparse.ArgumentParser(
         description='Saves json with contours from subject folder.',
         epilog=example,
