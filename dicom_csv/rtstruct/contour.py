@@ -1,6 +1,7 @@
 from pydicom import dcmread
 from pydicom.dataset import Dataset
 from skimage.draw import polygon
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -37,13 +38,13 @@ def read_rtstruct(row: pd.Series) -> dict:
     if row.InstanceNumbers is None:
         raise AttributeError('Contour does not have associated image.')
 
-    p = '/'.join(row[['PathToFolder', 'FileName']].values)
+    p = Path(row.PathToFolder) / row.FileName
     numbers = np.array(split_ints(row.InstanceNumbers)) - 1
     keys = row['SOPInstanceUIDs'].split(',')
     d = dict(zip(keys, numbers))
     rtstruct = dcmread(p)
     contours = list(rtstruct.ROIContourSequence)
-    roi_names = _get_contour_seq_name(rtstruct=rtstruct)
+    roi_names = _get_contour_seq_name(rtstruct=rtstruct, return_original=True)
     contours_result = dict()
 
     for ind, (name, roi) in enumerate(zip(roi_names, contours)):
