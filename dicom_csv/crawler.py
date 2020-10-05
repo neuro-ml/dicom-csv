@@ -85,6 +85,7 @@ def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = T
 
         result['HasPixelArray'] = has_px
 
+        # TODO: stop_before_pixels, shape could be assessed from Row, Columns attributes
         if has_px and result['NoError']:
             result['PixelArrayShape'] = ','.join(map(str, dc.pixel_array.shape))
 

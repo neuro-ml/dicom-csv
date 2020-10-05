@@ -142,7 +142,6 @@ def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True, max_delta: 
     if len(spacing) == 0:
         if check:
             raise ValueError('The provided metadata must contain al least 2 images.')
-
         return np.nan
 
     delta = spacing.max() - spacing.min()
@@ -174,7 +173,7 @@ def get_flipped_axes(row: pd.Series):
 def normalize_orientation(image: np.ndarray, row: pd.Series):
     """
     Transposes and flips the ``image`` to standard (Coronal, Sagittal, Axial) orientation.
-
+    # TODO: rewrite based on deployment code
     Warnings
     --------
     Changing image orientation. New image orientation will not coincide with metadata!

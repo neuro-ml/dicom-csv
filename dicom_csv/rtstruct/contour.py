@@ -56,7 +56,7 @@ def read_rtstruct(row: pd.Series) -> dict:
             contours_result[f'{ind}_{name}'] = _coords
         except AttributeError:
             print(f'No {name} contour.')
-
+# TODO: handle AttributeError exception differently, e.g. contours_result[name] = None
     return contours_result
 
 
