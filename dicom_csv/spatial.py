@@ -110,10 +110,10 @@ def order_slice_locations(dicom_metadata: pd.Series):
 def should_flip(dicom_metadata: pd.Series):
     """
     Returns True if the whole series' should be flipped
-    in order to account for 'HFS' patient position.
+    in order to account for 'HF?' patient position.
     """
     _, locations = order_slice_locations(dicom_metadata)
-    direction = dicom_metadata.PatientPosition == 'HFS'
+    direction = dicom_metadata.PatientPosition[:2] == 'HF'
     flip = locations[0] > locations[-1]
     return flip != direction
 

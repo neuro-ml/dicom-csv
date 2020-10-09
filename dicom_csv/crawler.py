@@ -92,7 +92,7 @@ def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = T
     for attr in dc.dir():
         try:
             value = dc.get(attr)
-        except NotImplementedError:
+        except:
             continue
         if value is None:
             continue
@@ -111,7 +111,7 @@ def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = T
 
 
 def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True, verbose: int = 0,
-              get_attrs=None) -> pd.DataFrame:
+              read_pixel_array: bool = True, get_attrs=None) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
 
@@ -172,7 +172,7 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
             if verbose > 1:
                 bar.set_description(jp(rel_path, file))
 
-            entry = get_attrs(jp(root, file))
+            entry = get_attrs(jp(root, file), read_pixel_array=read_pixel_array)
             entry['PathToFolder'] = rel_path if relative else root
             entry['FileName'] = file
             result.append(entry)
