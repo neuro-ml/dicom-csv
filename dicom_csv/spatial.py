@@ -22,35 +22,13 @@ def _get_image_orientation_patient(instance: Dataset):
 @csv_series
 def get_orientation_matrix(series: Union[Sequence[Dataset], pd.DataFrame]):
     """Returns 3 x 3 orientation matrix from single series."""
+    # TODO: check if it always stored in a column-wise fashion
     om = _get_image_orientation_patient(series[0])
     if not np.all([np.allclose(om, _get_image_orientation_patient(x)) for x in series]):
         raise AttributeError('Orientation matrix varies across slices.')
 
     x, y = om.reshape(2, 3)
     return np.stack([x, y, np.cross(x, y)])
-
-
-def get_fixed_orientation_matrix(row, return_main_plain_axis=False, max_delta=0.05):
-    """Sometimes Orientation Matrix is stored in row-wise fashion instead of column-wise.
-    Here we check this and return column-wise OM"""
-
-    # TODO: compare return_main_plain with `get_orientation_axis`
-
-    def check(d):
-        """Two out of three coordinates should be equal across slices."""
-        return (d < max_delta).sum() == 2
-
-    coords = get_patient_position(row)[:, 1:]
-    OM = get_orientation_matrix(row)
-
-    for om in [OM, OM.T]:
-        new_coords = coords.dot(om)
-        delta = np.max(new_coords, axis=0) - np.min(new_coords, axis=0)
-        if check(delta):
-            if return_main_plain_axis:
-                return om, np.where(delta < max_delta)[0]
-            return om
-    raise ValueError('ImagePositionPatient coordinates are inconsistent.')
 
 
 def get_orientation_axis(metadata: Union[pd.Series, pd.DataFrame]):
