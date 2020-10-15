@@ -72,15 +72,7 @@ def aggregate_images(metadata: pd.DataFrame, by: Sequence[str] = AGGREGATE_BY,
                 res[f'{position}s'] = ','.join(entry[position].astype(str))
         if 'SOPInstanceUID' in entry:
             res['SOPInstanceUIDs'] = ','.join(entry.SOPInstanceUID.astype(str))
-
-        # Why do wee need this? All these columns are not in unique_cols already.
-        return res.drop(['InstanceNumber',
-                         'FileName',
-                         'SliceLocation',
-                         'ImagePositionPatient0',
-                         'ImagePositionPatient1',
-                         'ImagePositionPatient2'],
-                        1, errors='ignore')
+        return res
 
     by = list(by)
     not_string = metadata[by].applymap(lambda x: not isinstance(x, str)).any()
