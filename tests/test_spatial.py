@@ -1,6 +1,7 @@
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from pydicom import dcmread
 from dicom_csv.spatial import (
     get_orientation_matrix,
     get_image_position_patient,
@@ -9,7 +10,8 @@ from dicom_csv.spatial import (
     Plane,
     _get_slices_spacing,
     get_pixel_spacing,
-    get_image_size
+    get_image_size,
+    order_series
 )
 
 # TODO: add more series for diversity
@@ -20,6 +22,12 @@ def _get_image():
     folder = Path('/home/anvar/mri_data')
     df = pd.read_csv(folder / 'mri_data.csv')
     return df.query('SeriesInstanceUID == @SERIES')
+
+
+def _get_series():
+    image = _get_image()
+    folder = Path('/home/anvar/mri_data')
+    return [dcmread(folder / file.PathToFolder / file.FileName) for _, file in image.iterrows()]
 
 
 def test_get_orientation_matrix():
@@ -77,6 +85,12 @@ def test_get_image_size():
     assert (rows, columns, slices) == (512, 512, 216)
 
 
+def test_order_series():
+    image = _get_series()
+    image = order_series(image)
+    print([im.SliceLocation for im in image])
+
+
 if __name__ == '__main__':
     test_get_orientation_matrix()
     test_get_image_position_patient()
@@ -85,3 +99,4 @@ if __name__ == '__main__':
     test_get_slice_spacing()
     test_get_pixel_spacing()
     test_get_image_size()
+    test_order_series()

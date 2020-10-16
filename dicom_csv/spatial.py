@@ -7,7 +7,7 @@ from enum import Enum
 from .utils import *
 
 __all__ = [
-    'get_orientation_matrix', 'get_orientation_axis', 'restore_orientation_matrix',
+    'get_orientation_matrix', 'restore_orientation_matrix',
     'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position',
     'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation',
     'get_image_position_patient', 'get_slice_locations', 'get_image_plane', 'Plane',
@@ -17,6 +17,18 @@ __all__ = [
 
 class Plane(Enum):
     Sagittal, Coronal, Axial = 0, 1, 2
+
+
+# TODO: Returns list if dicom_csv.interface.RowIndex instances
+# Only tested for Sequence[Dataset]
+@csv_series
+def order_series(series: Sequence[Dataset], decreasing=True):
+    """Returns sequence of instances in decreasing/increasing order of their slice locations."""
+    slices_location = get_slice_locations(series)
+    slices_order = np.argsort(slices_location)
+    if decreasing:
+        slices_order = slices_order[::-1]
+    return [series[i] for i in slices_order]
 
 
 @csv_series
@@ -118,17 +130,6 @@ def get_image_size(series: Sequence[Dataset]):
     rows, columns = series[0].Rows, series[0].Columns
     slices = len(series)
     return rows, columns, slices
-
-
-def get_orientation_axis(metadata: Union[pd.Series, pd.DataFrame]):
-    """Required columns: ImageOrientationPatient[0-5]"""
-    m = get_orientation_matrix(metadata)
-    matrix = np.atleast_3d(m)
-    result = np.array([np.nan if np.isnan(row).any() else np.abs(row).argmax(axis=0)[2] for row in matrix])
-
-    if m.ndim == 2:
-        result = extract_dims(result)
-    return result
 
 
 def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
