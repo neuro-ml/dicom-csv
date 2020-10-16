@@ -8,7 +8,7 @@ from dicom_csv.spatial import (
     get_image_plane,
     Plane,
     _get_slices_spacing,
-    get_slice_spacing
+    get_pixel_spacing
 )
 
 # TODO: add more series for diversity
@@ -51,6 +51,12 @@ def test_get_slice_spacing():
     assert np.allclose(spacings.mean(), 0.8)
 
 
+def test_get_pixel_spacing():
+    xy_spacings = get_pixel_spacing(image)
+    assert xy_spacings.shape == (2,)
+    assert np.allclose(xy_spacings, [0.4688, 0.4688])
+
+
 if __name__ == '__main__':
     folder = Path('/home/anvar/mri_data')
     df = join_tree(folder, ignore_extensions=['.ipynb'])
@@ -63,3 +69,4 @@ if __name__ == '__main__':
     test_get_slice_locations()
     test_get_image_plane()
     test_get_slice_spacing()
+    test_get_pixel_spacing()

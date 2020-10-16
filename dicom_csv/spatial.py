@@ -10,7 +10,8 @@ __all__ = [
     'get_orientation_matrix', 'get_orientation_axis', 'restore_orientation_matrix',
     'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position',
     'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation',
-    'get_image_position_patient', 'get_slice_locations', 'get_image_plane', 'Plane'
+    'get_image_position_patient', 'get_slice_locations', 'get_image_plane', 'Plane',
+    'get_pixel_spacing'
 ]
 
 
@@ -92,6 +93,21 @@ def get_image_position_patient(series: Sequence[Dataset]):
         return np.stack([s.ImagePositionPatient for s in series])
     except AttributeError as e:
         raise AttributeError('The tag "ImagePositionPatient" is missing.') from e
+
+
+@csv_series
+def get_pixel_spacing(series: Sequence[Dataset]):
+    """Returns pixel spacing (two numbers) in mm."""
+    pixel_spacings = np.stack([s.PixelSpacing for s in series])
+    if (pixel_spacings.max(axis=0) - pixel_spacings.min(axis=0)).max() > 0.01:
+        raise ValueError('The series has inconsistent pixel spacing.')
+    return pixel_spacings[0]
+
+
+@csv_series
+def get_xyz_spacing(series: Sequence[Dataset]):
+    """Returns voxel spacing (pixel spacing and distance between slices' centers)"""
+    pass
 
 
 def get_orientation_axis(metadata: Union[pd.Series, pd.DataFrame]):
@@ -203,20 +219,6 @@ def get_patient_position(row: pd.Series):
         split_floats(row['ImagePositionPatient2s']),
     )))
     return pos
-
-
-def get_xyz_spacing(row: pd.Series, restore_slice_location=False):
-    """Returns pixel spacing + distance between slices (between their centers),
-    in an order consistent with ImagePositionPatient's columns order."""
-    _, indices = get_fixed_orientation_matrix(row, return_main_plain_axis=True)
-    xyz = np.zeros(3)
-    xy = list(row[['PixelSpacing0', 'PixelSpacing1']].values)
-    index_z = list({0, 1, 2}.difference(set(indices)))[0]
-
-    xyz[indices[0]] = xy[0]
-    xyz[indices[1]] = xy[1]
-    xyz[index_z] = get_slice_spacing(row, restore_slice_location=restore_slice_location)
-    return xyz
 
 
 def get_image_size(row: pd.Series) -> tuple:
