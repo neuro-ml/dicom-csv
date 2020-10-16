@@ -106,8 +106,18 @@ def get_pixel_spacing(series: Sequence[Dataset]):
 
 @csv_series
 def get_xyz_spacing(series: Sequence[Dataset]):
-    """Returns voxel spacing (pixel spacing and distance between slices' centers)"""
-    pass
+    """Returns voxel spacing: pixel spacing and distance between slices' centers."""
+    dx, dy = get_pixel_spacing(series)
+    dz = get_slice_spacing(series)
+    return dx, dy, dz
+
+
+@csv_series
+def get_image_size(series: Sequence[Dataset]):
+    # TODO: check uniqueness across instances
+    rows, columns = series[0].Rows, series[0].Columns
+    slices = len(series)
+    return rows, columns, slices
 
 
 def get_orientation_axis(metadata: Union[pd.Series, pd.DataFrame]):
@@ -219,9 +229,3 @@ def get_patient_position(row: pd.Series):
         split_floats(row['ImagePositionPatient2s']),
     )))
     return pos
-
-
-def get_image_size(row: pd.Series) -> tuple:
-    """Returns image size in voxels."""
-    x, y = tuple(map(int, row.PixelArrayShape.split(',')))
-    return x, y, int(row.SlicesCount)
