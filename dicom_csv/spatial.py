@@ -75,29 +75,6 @@ def get_image_position_patient(series: Sequence[Dataset]):
         raise AttributeError('The tag "ImagePositionPatient" is missing.') from e
 
 
-def get_fixed_orientation_matrix(row, return_main_plain_axis=False, max_delta=0.05):
-    """Sometimes Orientation Matrix is stored in row-wise fashion instead of column-wise.
-    Here we check this and return column-wise OM"""
-
-    # TODO: compare return_main_plain with `get_orientation_axis`
-
-    def check(d):
-        """Two out of three coordinates should be equal across slices."""
-        return (d < max_delta).sum() == 2
-
-    coords = get_patient_position(row)[:, 1:]
-    OM = get_orientation_matrix(row)
-
-    for om in [OM, OM.T]:
-        new_coords = coords.dot(om)
-        delta = np.max(new_coords, axis=0) - np.min(new_coords, axis=0)
-        if check(delta):
-            if return_main_plain_axis:
-                return om, np.where(delta < max_delta)[0]
-            return om
-    raise ValueError('ImagePositionPatient coordinates are inconsistent.')
-
-
 def get_orientation_axis(metadata: Union[pd.Series, pd.DataFrame]):
     """Required columns: ImageOrientationPatient[0-5]"""
     m = get_orientation_matrix(metadata)
@@ -139,17 +116,6 @@ def restore_orientation_matrix(metadata: Union[pd.Series, pd.DataFrame]):
     return metadata
 
 
-def restore_slice_locations(dicom_metadata: pd.Series):
-    """Restore SliceLocation from ImagePositionPatient,
-    as if orientation matrix was Identity"""
-    pos = get_patient_position(dicom_metadata)
-    instances, coords = pos[:, 0], pos[:, 1:]
-    OM, main_plain_axis = get_fixed_orientation_matrix(dicom_metadata, return_main_plain_axis=True)
-    new_coords = coords.dot(OM)
-    j = list({0, 1, 2}.difference(set(main_plain_axis)))[0]
-    return np.vstack((instances, new_coords[:, j]))
-
-
 def order_slice_locations(dicom_metadata: pd.Series):
     locations = split_floats(dicom_metadata.SliceLocations)
     if np.any([np.isnan(loc) for loc in locations]):
@@ -171,42 +137,6 @@ def should_flip(dicom_metadata: pd.Series):
     direction = dicom_metadata.PatientPosition[:2] == 'HF'
     flip = locations[0] > locations[-1]
     return flip != direction
-
-
-def get_slice_spacing(dicom_metadata: pd.Series, check: bool = True, max_delta: float = 0.01,
-                      *, restore_slice_location=False) -> float:
-    """
-    Computes the spacing between slices for a dicom series.
-    Add slice restoration in case of non diagonal rotation matrix
-
-    If `check` is True - the spacing will be additionally checked for consistency,
-    so that the difference between spacings doesn't exceed `max_delta`.
-
-    Warnings
-    --------
-    restore_slice_location parameter will be removed!
-    """
-    if not restore_slice_location:
-        instances, locations = order_slice_locations(dicom_metadata)
-    else:
-        instances, locations = restore_slice_locations(dicom_metadata)
-
-    dx, dy = np.diff([instances, locations], axis=1)
-    spacing = dy / dx
-
-    if len(spacing) == 0:
-        if check:
-            raise ValueError('The provided metadata must contain al least 2 images.')
-        return np.nan
-
-    delta = spacing.max() - spacing.min()
-    if delta > max_delta:
-        if check:
-            raise ValueError(f'Seems like this series has an inconsistent slice spacing, max difference {delta}.')
-
-        return np.nan
-
-    return np.abs(spacing.mean())
 
 
 def get_axes_permutation(row: pd.Series):
