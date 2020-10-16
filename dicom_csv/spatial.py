@@ -8,7 +8,8 @@ from .utils import *
 __all__ = [
     'get_orientation_matrix', 'get_orientation_axis', 'restore_orientation_matrix',
     'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position',
-    'get_fixed_orientation_matrix', 'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation'
+    'get_fixed_orientation_matrix', 'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation',
+    'get_image_position_patient'
 ]
 
 
