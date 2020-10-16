@@ -1,8 +1,9 @@
 from dicom_csv import join_tree
 from pathlib import Path
 import numpy as np
-from dicom_csv.spatial import get_orientation_matrix, get_image_position_patient
+from dicom_csv.spatial import get_orientation_matrix, get_image_position_patient, get_slice_locations
 
+# TODO: add more series for diversity
 SERIES = '1.2.840.113619.2.374.2807.4233243.16142.1527731842.74'
 
 
@@ -10,14 +11,25 @@ def test_get_orientation_matrix():
     om = get_orientation_matrix(image)
     OM = np.array([0.9882921127294, 0.03687270420588, 0.14805101688742,
                   -0.0437989943104, 0.99807987034582, 0.04379749431055]).reshape(2, 3)
+
     assert om.shape == (3, 3)
     assert np.allclose(om[:2, :], OM, atol=1e-5)
+    assert np.allclose(om[0, :] @ om[1, :], 0, atol=1e-5)
 
 
 def test_get_image_position_patient():
     pos = get_image_position_patient(image)
     assert pos.shape == (216, 3)
     # TODO: add values, e.g. pos[0] check
+
+
+def test_get_slice_locations():
+    loc = get_slice_locations(image)
+    order_loc = np.argsort(loc)
+    order_test = np.argsort(test_slice_loc)
+
+    assert len(loc) == 216
+    assert np.allclose(order_loc, order_test)
 
 
 if __name__ == '__main__':
@@ -27,3 +39,6 @@ if __name__ == '__main__':
 
     test_get_orientation_matrix()
     test_get_image_position_patient()
+
+    test_slice_loc = image.SliceLocation.values
+    test_get_slice_locations()

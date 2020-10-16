@@ -3,6 +3,7 @@ import pandas as pd
 from typing import Sequence
 from pydicom import Dataset
 from dicom_csv.interface import csv_series
+from enum import Enum
 from .utils import *
 
 __all__ = [
@@ -11,6 +12,16 @@ __all__ = [
     'get_fixed_orientation_matrix', 'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation',
     'get_image_position_patient'
 ]
+
+
+@csv_series
+def get_slice_locations(series: Sequence[Dataset]):
+    """
+    Computes slices location from ImagePositionPatient.
+    """
+    image_position = get_image_position_patient(series)
+    om = get_orientation_matrix(series)
+    return image_position @ om.T[:, -1]
 
 
 def _get_image_orientation_patient(instance: Dataset):
