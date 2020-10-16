@@ -202,8 +202,13 @@ def get_flipped_axes(row: pd.Series):
     return [axis for axis, flip in enumerate(flips) if flip]
 
 
+# TODO: something must return transpose order, so we can apply it to all important metadata
+# TODO: take PatientPosition into account
+def transpose_series(series: Sequence[Dataset], plane: Union[Plane, int] = Plane.Axial):
+    pass
+
+
 # TODO: rewrite based on deployment code, specifically use transpose based on Plane
-# TODO: must return transpose order, so we can apply it to all important metadata
 def normalize_orientation(image: np.ndarray, row: pd.Series):
     """
     Transposes and flips the ``image`` to standard (Coronal, Sagittal, Axial) orientation.
