@@ -8,7 +8,7 @@ from .utils import *
 
 __all__ = [
     'get_orientation_matrix', 'restore_orientation_matrix',
-    'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position',
+    'should_flip', 'normalize_orientation', 'get_slice_spacing',
     'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation',
     'get_image_position_patient', 'get_slice_locations', 'get_image_plane', 'Plane',
     'get_pixel_spacing'
@@ -19,8 +19,7 @@ class Plane(Enum):
     Sagittal, Coronal, Axial = 0, 1, 2
 
 
-# TODO: Returns list if dicom_csv.interface.RowIndex instances
-# Only tested for Sequence[Dataset]
+# TODO: Returns list if dicom_csv.interface.RowIndex instances, only tested for Sequence[Dataset]
 @csv_series
 def order_series(series: Sequence[Dataset], decreasing=True):
     """Returns sequence of instances in decreasing/increasing order of their slice locations."""
@@ -185,10 +184,12 @@ def should_flip(dicom_metadata: pd.Series):
     return flip != direction
 
 
+# TODO: deprecate
 def get_axes_permutation(row: pd.Series):
     return np.abs(get_orientation_matrix(row)).argmax(axis=0)
 
 
+# TODO: deprecate
 def get_flipped_axes(row: pd.Series):
     flips = []
     m = get_orientation_matrix(row)
@@ -201,10 +202,12 @@ def get_flipped_axes(row: pd.Series):
     return [axis for axis, flip in enumerate(flips) if flip]
 
 
+# TODO: rewrite based on deployment code, specifically use transpose based on Plane
+# TODO: must return transpose order, so we can apply it to all important metadata
 def normalize_orientation(image: np.ndarray, row: pd.Series):
     """
     Transposes and flips the ``image`` to standard (Coronal, Sagittal, Axial) orientation.
-    # TODO: rewrite based on deployment code
+
     Warnings
     --------
     Changing image orientation. New image orientation will not coincide with metadata!
@@ -218,15 +221,3 @@ def normalize_orientation(image: np.ndarray, row: pd.Series):
 
     image = np.flip(image, axis=get_flipped_axes(row))
     return image.transpose(*get_axes_permutation(row))
-
-
-def get_patient_position(row: pd.Series):
-    """Returns ImagePatientPosition_x,y,z"""
-    # TODO: Consider rewriting this to take into account non identity OMs
-    pos = np.array(sorted(zip(
-        split_floats(row['InstanceNumbers']),
-        split_floats(row['ImagePositionPatient0s']),
-        split_floats(row['ImagePositionPatient1s']),
-        split_floats(row['ImagePositionPatient2s']),
-    )))
-    return pos

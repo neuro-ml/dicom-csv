@@ -86,9 +86,10 @@ def test_get_image_size():
 
 
 def test_order_series():
+    # TODO
     image = _get_series()
     image = order_series(image)
-    print([im.SliceLocation for im in image])
+    pass
 
 
 if __name__ == '__main__':
