@@ -6,7 +6,9 @@ from dicom_csv.spatial import (
     get_image_position_patient,
     get_slice_locations,
     get_image_plane,
-    Plane
+    Plane,
+    _get_slices_spacing,
+    get_slice_spacing
 )
 
 # TODO: add more series for diversity
@@ -43,6 +45,12 @@ def test_get_image_plane():
     assert plane == Plane.Axial
 
 
+def test_get_slice_spacing():
+    spacings = _get_slices_spacing(image)
+    assert spacings.shape == (215,)
+    assert np.allclose(spacings.mean(), 0.8)
+
+
 if __name__ == '__main__':
     folder = Path('/home/anvar/mri_data')
     df = join_tree(folder, ignore_extensions=['.ipynb'])
@@ -54,3 +62,4 @@ if __name__ == '__main__':
     test_slice_loc = image.SliceLocation.values
     test_get_slice_locations()
     test_get_image_plane()
+    test_get_slice_spacing()

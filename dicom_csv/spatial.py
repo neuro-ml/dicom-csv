@@ -9,13 +9,32 @@ from .utils import *
 __all__ = [
     'get_orientation_matrix', 'get_orientation_axis', 'restore_orientation_matrix',
     'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position',
-    'get_fixed_orientation_matrix', 'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation',
+    'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation',
     'get_image_position_patient', 'get_slice_locations', 'get_image_plane', 'Plane'
 ]
 
 
 class Plane(Enum):
     Sagittal, Coronal, Axial = 0, 1, 2
+
+
+@csv_series
+def _get_slices_spacing(series: Sequence[Dataset]) -> Sequence[float]:
+    """Returns distances between slices."""
+    slice_locations = get_slice_locations(series)
+    deltas = np.abs(np.diff(sorted(slice_locations)))
+    return deltas
+
+
+@csv_series
+def get_slice_spacing(series: Sequence[Dataset]):
+    """Returns constant distance between slices of a series."""
+    deltas = _get_slices_spacing(series)
+    if np.any(np.isclose(deltas, 0)):
+        raise ValueError('Duplicated slices.')
+    if np.max(deltas) - np.min(deltas) > 0.1:
+        raise ValueError('Non-constant slice spacing.')
+    return deltas[0]
 
 
 @csv_series
