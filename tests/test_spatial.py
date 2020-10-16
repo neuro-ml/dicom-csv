@@ -1,7 +1,13 @@
 from dicom_csv import join_tree
 from pathlib import Path
 import numpy as np
-from dicom_csv.spatial import get_orientation_matrix, get_image_position_patient, get_slice_locations
+from dicom_csv.spatial import (
+    get_orientation_matrix,
+    get_image_position_patient,
+    get_slice_locations,
+    get_image_plane,
+    Plane
+)
 
 # TODO: add more series for diversity
 SERIES = '1.2.840.113619.2.374.2807.4233243.16142.1527731842.74'
@@ -32,6 +38,11 @@ def test_get_slice_locations():
     assert np.allclose(order_loc, order_test)
 
 
+def test_get_image_plane():
+    plane = get_image_plane(image)
+    assert plane == Plane.Axial
+
+
 if __name__ == '__main__':
     folder = Path('/home/anvar/mri_data')
     df = join_tree(folder, ignore_extensions=['.ipynb'])
@@ -42,3 +53,4 @@ if __name__ == '__main__':
 
     test_slice_loc = image.SliceLocation.values
     test_get_slice_locations()
+    test_get_image_plane()

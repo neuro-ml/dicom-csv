@@ -10,8 +10,31 @@ __all__ = [
     'get_orientation_matrix', 'get_orientation_axis', 'restore_orientation_matrix',
     'should_flip', 'normalize_orientation', 'get_slice_spacing', 'get_patient_position',
     'get_fixed_orientation_matrix', 'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation',
-    'get_image_position_patient'
+    'get_image_position_patient', 'get_slice_locations', 'get_image_plane', 'Plane'
 ]
+
+
+class Plane(Enum):
+    Sagittal, Coronal, Axial = 0, 1, 2
+
+
+@csv_series
+def is_axial(series: Sequence[Dataset]):
+    """Checks if series has an Axial main plain."""
+    return get_image_plane(series) == Plane.Axial
+
+
+@csv_series
+def get_image_plane(series: Sequence[Dataset]) -> Plane:
+    """
+    Returns main plane of the image if it exists. Might not work with large rotation, since there is no
+    `main plane` in that case.
+    """
+    pos = get_image_position_patient(series)
+    slices = get_slice_locations(series)
+    slices_order = np.argsort(slices)
+    index = np.argmax(np.abs(np.diff(pos[slices_order], axis=0)), axis=1)[0]
+    return Plane(index)
 
 
 @csv_series
