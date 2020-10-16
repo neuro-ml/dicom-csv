@@ -31,6 +31,38 @@ def get_orientation_matrix(series: Union[Sequence[Dataset], pd.DataFrame]):
     return np.stack([x, y, np.cross(x, y)])
 
 
+@csv_series
+def get_image_position_patient(series: Sequence[Dataset]):
+    """Returns ImagePositionPatient stacked into array."""
+    try:
+        return np.stack([s.ImagePositionPatient for s in series])
+    except AttributeError as e:
+        raise AttributeError('The tag "ImagePositionPatient" is missing.') from e
+
+
+def get_fixed_orientation_matrix(row, return_main_plain_axis=False, max_delta=0.05):
+    """Sometimes Orientation Matrix is stored in row-wise fashion instead of column-wise.
+    Here we check this and return column-wise OM"""
+
+    # TODO: compare return_main_plain with `get_orientation_axis`
+
+    def check(d):
+        """Two out of three coordinates should be equal across slices."""
+        return (d < max_delta).sum() == 2
+
+    coords = get_patient_position(row)[:, 1:]
+    OM = get_orientation_matrix(row)
+
+    for om in [OM, OM.T]:
+        new_coords = coords.dot(om)
+        delta = np.max(new_coords, axis=0) - np.min(new_coords, axis=0)
+        if check(delta):
+            if return_main_plain_axis:
+                return om, np.where(delta < max_delta)[0]
+            return om
+    raise ValueError('ImagePositionPatient coordinates are inconsistent.')
+
+
 def get_orientation_axis(metadata: Union[pd.Series, pd.DataFrame]):
     """Required columns: ImageOrientationPatient[0-5]"""
     m = get_orientation_matrix(metadata)
