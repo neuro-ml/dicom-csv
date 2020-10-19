@@ -8,7 +8,7 @@ import pandas as pd
 
 from ..utils import split_ints
 from .meta import _get_contour_seq_name
-from ..spatial import get_orientation_matrix, get_xyz_spacing, get_patient_position
+from ..spatial import get_orientation_matrix, get_xyz_spacing, get_image_position_patient
 
 __all__ = 'read_rtstruct', 'contours_to_image'
 
