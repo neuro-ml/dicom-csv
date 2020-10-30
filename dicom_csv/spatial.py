@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from typing import Sequence
 from pydicom import Dataset
-from dicom_csv.interface import csv_series
+from dicom_csv.interface import csv_series, out_csv
 from enum import Enum
 from .utils import *
 
@@ -21,6 +21,7 @@ class Plane(Enum):
 
 # TODO: Returns list if dicom_csv.interface.RowIndex instances, only tested for Sequence[Dataset]
 @csv_series
+@out_csv
 def order_series(series: Sequence[Dataset], decreasing=True):
     """Returns sequence of instances in decreasing/increasing order of their slice locations."""
     slices_location = get_slice_locations(series)
