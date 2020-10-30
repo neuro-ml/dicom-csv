@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-from typing import Sequence
+from typing import Sequence, Tuple, Union
 from pydicom import Dataset
 from dicom_csv.interface import csv_series, out_csv
 from enum import Enum
-from .utils import *
+from .utils import Series, ORIENTATION, extract_dims, split_floats, zip_equal, contains_info
 
 __all__ = [
     'get_orientation_matrix', 'restore_orientation_matrix',
@@ -19,10 +19,10 @@ class Plane(Enum):
     Sagittal, Coronal, Axial = 0, 1, 2
 
 
-# TODO: Returns list if dicom_csv.interface.RowIndex instances, only tested for Sequence[Dataset]
+# TODO: Returns list if dicom_csv.interface.RowIndex instances, only tested for Series
 @csv_series
 @out_csv
-def order_series(series: Sequence[Dataset], decreasing=True):
+def order_series(series: Series, decreasing=True):
     """Returns sequence of instances in decreasing/increasing order of their slice locations."""
     slices_location = get_slice_locations(series)
     slices_order = np.argsort(slices_location)
@@ -32,7 +32,7 @@ def order_series(series: Sequence[Dataset], decreasing=True):
 
 
 @csv_series
-def _get_slices_spacing(series: Sequence[Dataset]) -> Sequence[float]:
+def _get_slices_spacing(series: Series) -> Sequence[float]:
     """Returns distances between slices."""
     slice_locations = get_slice_locations(series)
     deltas = np.abs(np.diff(sorted(slice_locations)))
@@ -40,7 +40,7 @@ def _get_slices_spacing(series: Sequence[Dataset]) -> Sequence[float]:
 
 
 @csv_series
-def get_slice_spacing(series: Sequence[Dataset]):
+def get_slice_spacing(series: Series) -> float:
     """Returns constant distance between slices of a series."""
     deltas = _get_slices_spacing(series)
     if np.any(np.isclose(deltas, 0)):
@@ -51,13 +51,13 @@ def get_slice_spacing(series: Sequence[Dataset]):
 
 
 @csv_series
-def is_axial(series: Sequence[Dataset]):
+def is_axial(series: Series) -> bool:
     """Checks if series has an Axial main plain."""
     return get_image_plane(series) == Plane.Axial
 
 
 @csv_series
-def get_image_plane(series: Sequence[Dataset]) -> Plane:
+def get_image_plane(series: Series) -> Plane:
     """
     Returns main plane of the image if it exists. Might not work with large rotation, since there is no
     `main plane` in that case.
@@ -70,7 +70,7 @@ def get_image_plane(series: Sequence[Dataset]) -> Plane:
 
 
 @csv_series
-def get_slice_locations(series: Sequence[Dataset]):
+def get_slice_locations(series: Series) -> Sequence[float]:
     """
     Computes slices location from ImagePositionPatient.
     """
@@ -87,7 +87,7 @@ def _get_image_orientation_patient(instance: Dataset):
 
 
 @csv_series
-def get_orientation_matrix(series: Union[Sequence[Dataset], pd.DataFrame]):
+def get_orientation_matrix(series: Series):
     """Returns 3 x 3 orientation matrix from single series."""
     # TODO: check if it always stored in a column-wise fashion
     om = _get_image_orientation_patient(series[0])
@@ -99,7 +99,7 @@ def get_orientation_matrix(series: Union[Sequence[Dataset], pd.DataFrame]):
 
 
 @csv_series
-def get_image_position_patient(series: Sequence[Dataset]):
+def get_image_position_patient(series: Series):
     """Returns ImagePositionPatient stacked into array."""
     try:
         return np.stack([s.ImagePositionPatient for s in series])
@@ -108,7 +108,7 @@ def get_image_position_patient(series: Sequence[Dataset]):
 
 
 @csv_series
-def get_pixel_spacing(series: Sequence[Dataset]):
+def get_pixel_spacing(series: Series) -> Tuple[float, float]:
     """Returns pixel spacing (two numbers) in mm."""
     pixel_spacings = np.stack([s.PixelSpacing for s in series])
     if (pixel_spacings.max(axis=0) - pixel_spacings.min(axis=0)).max() > 0.01:
@@ -117,7 +117,7 @@ def get_pixel_spacing(series: Sequence[Dataset]):
 
 
 @csv_series
-def get_xyz_spacing(series: Sequence[Dataset]):
+def get_xyz_spacing(series: Series):
     """Returns voxel spacing: pixel spacing and distance between slices' centers."""
     dx, dy = get_pixel_spacing(series)
     dz = get_slice_spacing(series)
@@ -125,7 +125,7 @@ def get_xyz_spacing(series: Sequence[Dataset]):
 
 
 @csv_series
-def get_image_size(series: Sequence[Dataset]):
+def get_image_size(series: Series):
     # TODO: check uniqueness across instances
     rows, columns = series[0].Rows, series[0].Columns
     slices = len(series)
@@ -174,6 +174,7 @@ def order_slice_locations(dicom_metadata: pd.Series):
     ))).T
 
 
+@np.deprecate
 def should_flip(dicom_metadata: pd.Series):
     """
     Returns True if the whole series' should be flipped
@@ -205,7 +206,7 @@ def get_flipped_axes(row: pd.Series):
 
 # TODO: something must return transpose order, so we can apply it to all important metadata
 # TODO: take PatientPosition into account
-def transpose_series(series: Sequence[Dataset], plane: Union[Plane, int] = Plane.Axial):
+def transpose_series(series: Series, plane: Union[Plane, int] = Plane.Axial):
     pass
 
 

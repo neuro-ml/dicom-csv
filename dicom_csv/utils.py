@@ -1,10 +1,13 @@
 from pathlib import Path
-from typing import Union
+from typing import Union, Sequence
 
 import pandas as pd
+from pydicom import Dataset
 
 PathLike = Union[Path, str]
 ORIENTATION = [f'ImageOrientationPatient{i}' for i in range(6)]
+
+Series = Instances = Sequence[Dataset]
 
 
 def split_floats(string, sep=','):

@@ -9,8 +9,6 @@ from dicom_csv import join_tree, aggregate_images, load_series
 @pytest.fixture
 @lru_cache()
 def meta(tests_folder):
-    import pandas as pd
-    return pd.read_csv('/nmnt/media/home/max/temp.csv')
     return join_tree(tests_folder / 'crawler', relative=True, verbose=False, force=False)
 
 
