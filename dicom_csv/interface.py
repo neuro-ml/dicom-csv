@@ -50,7 +50,7 @@ def out_csv(func):
                 assert not isinstance(entry, DataframeWrapper)
                 rows.append(entry.unwrap())
 
-            return pd.concat(rows)
+            return pd.concat(rows, 1).T
 
         return result
 
