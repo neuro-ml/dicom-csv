@@ -4,14 +4,33 @@ from operator import itemgetter
 from os.path import join as jp
 
 import numpy as np
-from pydicom import dcmread
 
-from dicom_csv.rtstruct.contour import read_rtstruct, contours_to_image, contour_to_mask
+from .rtstruct.contour import read_rtstruct, contours_to_image, contour_to_mask
 from .spatial import *
 from .spatial import get_image_size
 from .utils import *
 
-__all__ = 'load_series',
+__all__ = 'load_series', 'get_image', 'stack_images'
+
+
+def get_image(instance: Dataset):
+    def _to_int(x):
+        if x == int(x):
+            x = int(x)
+        return x
+
+    array = instance.pixel_array
+    slope, intercept = instance.get('RescaleSlope'), instance.get('RescaleIntercept')
+    if slope is not None and slope != 1:
+        array = array * _to_int(slope)
+    if intercept is not None and intercept != 0:
+        array = array + _to_int(intercept)
+
+    return array
+
+
+def stack_images(series: Series, axis: int = -1):
+    return np.moveaxis(np.array(list(map(get_image, series))), 0, axis)
 
 
 # TODO: legacy support
@@ -20,6 +39,7 @@ class Default:
 
 
 # TODO: move to pathlib
+@np.deprecate
 def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[bool, None] = Default,
                 scaling: bool = None) -> np.ndarray:
     """

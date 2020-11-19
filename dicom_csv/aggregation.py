@@ -1,5 +1,5 @@
 """Tools for grouping DICOM metadata into images."""
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Union
 
 import pandas as pd
 
@@ -13,13 +13,7 @@ def _remove_dots(x):
         return x
 
 
-AGGREGATE_BY = (
-    'PatientID', 'SeriesInstanceUID', 'StudyInstanceUID',
-    'PathToFolder', 'PixelArrayShape',
-)
-
-
-def aggregate_images(metadata: pd.DataFrame, by: Sequence[str] = AGGREGATE_BY,
+def aggregate_images(metadata: pd.DataFrame, by: Union[str, Sequence[str]],
                      process_series: Callable = None) -> pd.DataFrame:
     """
     Groups DICOM ``metadata`` into images (series).
@@ -52,6 +46,7 @@ def aggregate_images(metadata: pd.DataFrame, by: Sequence[str] = AGGREGATE_BY,
     """
 
     def get_unique_cols(df):
+        # TODO: deal with float precision errors
         return [col for col in df.columns if len(df[col].dropna().unique()) == 1]
 
     def process_group(entry):
@@ -61,6 +56,7 @@ def aggregate_images(metadata: pd.DataFrame, by: Sequence[str] = AGGREGATE_BY,
         res = entry.iloc[[0]][get_unique_cols(entry)]
         res['FileNames'] = '/'.join(entry.FileName)
         res['SlicesCount'] = len(entry)
+        # TODO: move the saved fields to arguments
         try:
             res['InstanceNumbers'] = ','.join(map(_remove_dots, entry.InstanceNumber))
         except (ValueError, TypeError):
@@ -72,9 +68,14 @@ def aggregate_images(metadata: pd.DataFrame, by: Sequence[str] = AGGREGATE_BY,
                 res[f'{position}s'] = ','.join(entry[position].astype(str))
         if 'SOPInstanceUID' in entry:
             res['SOPInstanceUIDs'] = ','.join(entry.SOPInstanceUID.astype(str))
-        return res
 
-    by = list(by)
+        return res.drop(['FileName'], axis=1, errors='ignore')
+
+    if isinstance(by, str):
+        by = [by]
+    else:
+        by = list(by)
+
     not_string = metadata[by].applymap(lambda x: not isinstance(x, str)).any()
     if not_string.any():
         not_strings = ', '.join(not_string.index[not_string])

@@ -1,21 +1,24 @@
 """Contains functions for gathering metadata from individual DICOM files or entire directories."""
+import logging
 import os
 import struct
-from os.path import join as jp
-from typing import Sequence
+from pathlib import Path
+from typing import Sequence, Iterable
 
 import pandas as pd
-import numpy as np
 from tqdm import tqdm
-from pydicom import valuerep, errors, dcmread
+from pydicom import valuerep, errors, dcmread, Dataset
 from pydicom.uid import ImplicitVRLittleEndian
 
+from .convert import is_volumetric_ct, split_volume
 from .utils import PathLike
 
 __all__ = 'get_file_meta', 'join_tree'
 
 SERIAL = {'ImagePositionPatient', 'ImageOrientationPatient', 'PixelSpacing'}
 PERSON_CLASS = valuerep.PersonName
+
+logger = logging.getLogger(__name__)
 
 
 def _throw(e):
@@ -34,7 +37,8 @@ def read_dicom(path: PathLike, force: bool = False):
         raise
 
 
-def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = True) -> dict:
+def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = False,
+                  unpack_volumetric: bool = False) -> Iterable[dict]:
     """
     Get a dict containing the metadata from the DICOM file located at ``path``.
 
@@ -63,36 +67,42 @@ def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = T
         >>> conda install -c glueviz gdcm # Python 3.5 and 3.6
         >>> conda install -c conda-forge gdcm # Python 3.7
     """
-    result = {}
-
     try:
-        result['NoError'], dc = read_dicom(path, force)
+        no_error, instance = read_dicom(path, force)
     except (errors.InvalidDicomError, struct.error, OSError, NotImplementedError, AttributeError, KeyError):
-        result['NoError'] = False
-        return result
+        yield {'NoError': False}
+        return
 
+    if unpack_volumetric and is_volumetric_ct(instance):
+        instances = split_volume(instance)
+    else:
+        instances = [instance]
+
+    for instance in instances:
+        result = extract_meta(instance, read_pixel_array)
+        result.setdefault('NoError', True)
+        yield result
+
+
+def extract_meta(instance: Dataset, read_pixel_array: bool = False) -> dict:
+    result = {}
     if read_pixel_array:
         try:
-            has_px = hasattr(dc, 'pixel_array')
+            has_px = hasattr(instance, 'pixel_array')
         except (TypeError, NotImplementedError):
             has_px = False
-        except ValueError:
-            has_px = True
-            result['NoError'] = False
-        except RuntimeError:
+        except (ValueError, RuntimeError):
             has_px = True
             result['NoError'] = False
 
+        # TODO: 7FE0?
         result['HasPixelArray'] = has_px
 
-        # TODO: stop_before_pixels, shape could be assessed from Row, Columns attributes
-        if has_px and result['NoError']:
-            result['PixelArrayShape'] = ','.join(map(str, dc.pixel_array.shape))
-
-    for attr in dc.dir():
+    for attr in instance.dir():
         try:
-            value = dc.get(attr)
-        except:
+            value = instance.get(attr)
+        except BaseException as e:
+            logger.debug(f'Exception while accessing key "{attr}": {e.__class__.__name__} {e}')
             continue
         if value is None:
             continue
@@ -102,7 +112,7 @@ def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = T
 
         elif attr in SERIAL:
             for pos, num in enumerate(value):
-                result[f'{attr}{pos}'] = np.round(num, 5)  # float precision errors
+                result[f'{attr}{pos}'] = num
 
         elif isinstance(value, (int, float, str)):
             result[attr] = value
@@ -111,7 +121,7 @@ def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = T
 
 
 def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True, verbose: int = 0,
-              read_pixel_array: bool = True, get_attrs=None, force: bool = True) -> pd.DataFrame:
+              read_pixel_array: bool = False, force: bool = True, unpack_volumetric: bool = True) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
 
@@ -131,9 +141,6 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
             | 0 - no progressbar
             | 1 - progressbar with iterations count
             | 2 - progressbar with filenames
-
-    get_attrs - function,
-        function to use to collect metadata from the file, if None dicom_csv.crawler.get_file_meta is used.
 
     References
     ----------
@@ -156,25 +163,24 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
         if not extension.startswith('.'):
             raise ValueError(f'Each extension must start with a dot: "{extension}".')
 
-    if get_attrs is None:
-        get_attrs = get_file_meta
-
     result = []
     bar = tqdm(disable=not verbose)
     for root, _, files in os.walk(top, onerror=_throw, followlinks=True):
-        rel_path = os.path.relpath(root, top)
+        root = Path(root)
+        rel_path = root.relative_to(top)
 
-        for file in files:
-            if any(file.endswith(ext) for ext in ignore_extensions):
+        for filename in files:
+            if any(filename.endswith(ext) for ext in ignore_extensions):
                 continue
 
             bar.update()
             if verbose > 1:
-                bar.set_description(jp(rel_path, file))
+                bar.set_description(str(rel_path / filename))
 
-            entry = get_attrs(jp(root, file), force=force, read_pixel_array=read_pixel_array)
-            entry['PathToFolder'] = rel_path if relative else root
-            entry['FileName'] = file
-            result.append(entry)
+            for entry in get_file_meta(root / filename, force=force, read_pixel_array=read_pixel_array,
+                                       unpack_volumetric=unpack_volumetric):
+                entry['PathToFolder'] = str(rel_path if relative else root)
+                entry['FileName'] = filename
+                result.append(entry)
 
     return pd.DataFrame(result)

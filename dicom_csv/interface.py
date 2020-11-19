@@ -1,5 +1,7 @@
 from functools import wraps
 import pandas as pd
+from dicom_csv.utils import split_floats
+
 from dicom_csv.crawler import SERIAL
 
 
@@ -24,8 +26,17 @@ def csv_series(func):
             # unpack it
             # TODO: need a better conversion between aggregated and plain meta
             files = series.FileNames.split('/')
-            series = pd.DataFrame([series] * len(files)).copy().drop('FileNames', axis=1)
-            series['FileName'] = files
+            fields = {
+                'FileName': files,
+            }
+            for key in ['ImagePositionPatient0', 'ImagePositionPatient1', 'ImagePositionPatient2', 'InstanceNumber']:
+                col = f'{key}s'
+                if col in series:
+                    fields[key] = split_floats(series[col])
+
+            series = pd.DataFrame([series] * len(files)).copy().drop([f'{col}s' for col in fields], axis=1)
+            for col, values in fields.items():
+                series[col] = values
 
         if isinstance(series, pd.DataFrame):
             series = DataframeWrapper(series)
