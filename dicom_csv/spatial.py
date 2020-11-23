@@ -9,7 +9,7 @@ from .utils import Series, ORIENTATION, extract_dims, split_floats, zip_equal, c
 __all__ = [
     'get_orientation_matrix', 'restore_orientation_matrix',
     'normalize_orientation', 'get_slice_spacing',
-    'get_xyz_spacing', 'get_flipped_axes', 'get_axes_permutation',
+    'get_voxel_spacing', 'get_flipped_axes', 'get_axes_permutation',
     'get_image_position_patient', 'get_slice_locations', 'get_image_plane', 'Plane',
     'get_pixel_spacing', 'order_series'
 ]
@@ -32,7 +32,7 @@ def order_series(series: Series, decreasing=True):
 
 
 @csv_series
-def _get_slices_spacing(series: Series) -> Sequence[float]:
+def _get_slices_spacing(series: Series) -> np.ndarray:
     """Returns distances between slices."""
     slice_locations = get_slice_locations(series)
     deltas = np.abs(np.diff(sorted(slice_locations)))
@@ -41,19 +41,23 @@ def _get_slices_spacing(series: Series) -> Sequence[float]:
 
 @csv_series
 def get_slice_spacing(series: Series, max_delta: float = 0.1, errors: bool = True) -> float:
-    """Returns constant distance between slices of a series."""
+    """
+    Returns constant distance between slices of a series.
+    If the series doesn't have constant spacing - raises ValueError if ``errors`` is True,
+    returns ``np.nan`` otherwise.
+    """
     deltas = _get_slices_spacing(series)
 
-    if np.any(np.isclose(deltas, 0)):
+    if np.isclose(deltas, 0).any():
         if errors:
             raise ValueError('Duplicated slices.')
         return np.nan
-    if np.max(deltas) - np.min(deltas) > max_delta:
+    if deltas.max() - deltas.min() > max_delta:
         if errors:
             raise ValueError('Non-constant slice spacing.')
         return np.nan
 
-    return deltas[0]
+    return deltas.mean()
 
 
 @csv_series
