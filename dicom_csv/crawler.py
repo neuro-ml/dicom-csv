@@ -73,7 +73,7 @@ def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = F
         yield {'NoError': False}
         return
 
-    if unpack_volumetric and is_volumetric_ct(instance):
+    if unpack_volumetric and is_volumetric_ct(instance, errors=False):
         instances = split_volume(instance)
     else:
         instances = [instance]

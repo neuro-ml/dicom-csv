@@ -10,6 +10,7 @@ from pydicom.uid import ImplicitVRLittleEndian
 PathLike = Union[Path, str]
 ORIENTATION = [f'ImageOrientationPatient{i}' for i in range(6)]
 
+Instance = Dataset
 Series = Instances = Sequence[Dataset]
 
 

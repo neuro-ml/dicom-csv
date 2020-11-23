@@ -1,9 +1,8 @@
 import logging
 
-from pydicom import Dataset
 from pydicom.uid import generate_uid
 
-from .utils import Series, Instances, bufferize_instance, set_file_meta, collect
+from .utils import Series, Instances, bufferize_instance, set_file_meta, collect, Instance
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +18,18 @@ def expand_volumetric(instances: Instances) -> Instances:
             yield instance
 
 
-def is_volumetric_ct(instance: Dataset):
+def is_volumetric_ct(instance: Instance, errors: bool = True) -> bool:
     """Checks if the input Dataset is an Enhanced CT Image Storage (volumetric image)."""
-    return instance.SOPClassUID == '1.2.840.10008.5.1.4.1.1.2.1'
+    try:
+        return instance.SOPClassUID == '1.2.840.10008.5.1.4.1.1.2.1'
+    except AttributeError:
+        if errors:
+            raise
+        return False
 
 
 @collect
-def split_volume(instance) -> Series:
+def split_volume(instance: Instance) -> Series:
     """Splits volumetric (EnchancedCTImageStorage) instance into separate frames."""
     if not is_volumetric_ct(instance):
         raise ValueError('The instance is not volumetric.')
