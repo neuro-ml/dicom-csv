@@ -125,7 +125,7 @@ def construct_nifti(series: Series):
     om = np.eye(4)
     om[:3, :3] = m
     om[:3, 3] = offset
-    om = om * np.diag(np.hstack(voxel_spacing, 1.))
+    om = om * np.diag(np.hstack([voxel_spacing, 1.]))
     data_shape = get_image_size(series)
 
     # Looks like Nifti1Image overwrites OM if it is provided in header
