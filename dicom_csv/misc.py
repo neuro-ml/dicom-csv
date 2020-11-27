@@ -109,34 +109,29 @@ def load_rtstruct(rtstruct_row: pd.Series, contour_name: str = None) -> dict:
     return masks
 
 
-def construct_nifti(reference_row: pd.Series, array=None, base_path: PathLike = None):
+def construct_nifti(series: Series):
     """Construct a nifti image from dicoms.
 
-    If ``array`` is not None, image metadata is taken from reference_row,
-    and image tensor is an array. This is mainly for saving contour masks.
-
     Notes:
+    ---
     Metadata stored in NIFTI:
     ImagePositionPatient_x,y,z; PixelSpacing_x,y; SpacingBetweenSlices; ArrayShape
     """
     from nibabel import Nifti1Header, Nifti1Image
 
-    if array is None:
-        array = load_series(reference_row, orientation=False, base_path=base_path)
-
-    M = get_orientation_matrix(reference_row)
-    offset = get_patient_position(reference_row)[0, 1:]
-    slice_spacing = get_slice_spacing(reference_row)
-    pixel_spacings = reference_row[['PixelSpacing0', 'PixelSpacing1']].values
+    M = get_orientation_matrix(series)
+    offset = get_image_position_patient(series)[0] # [0, 1:] # [0]
+    voxel_spacing = get_voxel_spacing(series)
     OM = np.eye(4)
     OM[:3, :3] = M
     OM[:3, 3] = offset
-    OM = OM * np.diag(np.hstack((pixel_spacings, slice_spacing)))
-    data_shape = get_image_size(reference_row)
+    OM = OM * np.diag(voxel_spacing)
+    data_shape = get_image_size(series)
 
     # Looks like Nifti1Image overwrites OM if it is provided in header
     # see https://github.com/nipy/nibabel/blob/master/nibabel/nifti1.py Nifti1Header.set_qform()
     header = Nifti1Header()
     header.set_data_shape(data_shape)
 
+    array = stack_images(series)
     return Nifti1Image(array, OM, header=header)

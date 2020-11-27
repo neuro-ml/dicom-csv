@@ -10,7 +10,6 @@ def csv_instance(func):
     def wrapper(instance, *args, **kwargs):
         if isinstance(instance, pd.Series):
             instance = SeriesWrapper(instance)
-
         return func(instance, *args, **kwargs)
 
     return wrapper
@@ -42,7 +41,6 @@ def csv_series(func):
             series = DataframeWrapper(series)
 
         return func(series, *args, **kwargs)
-
     return wrapper
 
 
