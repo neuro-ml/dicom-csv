@@ -110,7 +110,7 @@ def load_rtstruct(rtstruct_row: pd.Series, contour_name: str = None) -> dict:
 
 
 def construct_nifti(series: Series):
-    """Construct a nifti image from dicoms.
+    """Construct a nifti image from DICOMs.
 
     Notes:
     ---
@@ -119,19 +119,19 @@ def construct_nifti(series: Series):
     """
     from nibabel import Nifti1Header, Nifti1Image
 
-    M = get_orientation_matrix(series)
-    offset = get_image_position_patient(series)[0] # [0, 1:] # [0]
+    m = get_orientation_matrix(series)
+    offset = get_image_position_patient(series)[0]
     voxel_spacing = get_voxel_spacing(series)
-    OM = np.eye(4)
-    OM[:3, :3] = M
-    OM[:3, 3] = offset
-    OM = OM * np.diag(voxel_spacing)
+    om = np.eye(4)
+    om[:3, :3] = m
+    om[:3, 3] = offset
+    om = om * np.diag(np.hstack[voxel_spacing, 1.])
     data_shape = get_image_size(series)
 
     # Looks like Nifti1Image overwrites OM if it is provided in header
     # see https://github.com/nipy/nibabel/blob/master/nibabel/nifti1.py Nifti1Header.set_qform()
     header = Nifti1Header()
     header.set_data_shape(data_shape)
-
     array = stack_images(series)
-    return Nifti1Image(array, OM, header=header)
+
+    return Nifti1Image(array, om, header=header)
