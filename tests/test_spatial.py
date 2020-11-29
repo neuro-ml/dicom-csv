@@ -9,7 +9,7 @@ from dicom_csv.spatial import (
     get_slice_locations,
     get_image_plane,
     Plane,
-    _get_slices_spacing,
+    _get_slices_deltas,
     get_pixel_spacing,
     get_image_size,
     order_series
@@ -61,7 +61,7 @@ def test_get_image_plane(image):
 
 
 def test_get_slice_spacing(image):
-    spacings = _get_slices_spacing(image)
+    spacings = _get_slices_deltas(image)
     assert spacings.shape == (215,)
     assert np.allclose(spacings.mean(), 0.8)
 

@@ -32,7 +32,7 @@ def order_series(series: Series, decreasing=True):
 
 
 @csv_series
-def _get_slices_spacing(series: Series) -> np.ndarray:
+def _get_slices_deltas(series: Series) -> np.ndarray:
     """Returns distances between slices."""
     slice_locations = get_slice_locations(series)
     deltas = np.abs(np.diff(sorted(slice_locations)))
@@ -46,8 +46,12 @@ def get_slice_spacing(series: Series, max_delta: float = 0.1, errors: bool = Tru
     If the series doesn't have constant spacing - raises ValueError if ``errors`` is True,
     returns ``np.nan`` otherwise.
     """
-    deltas = _get_slices_spacing(series)
+    deltas = _get_slices_deltas(series)
 
+    if len(series) <= 1:
+        if errors:
+            raise ValueError('Need at least 2 instances in a series to calculate slice spacing.')
+        return np.nan
     if np.isclose(deltas, 0).any():
         if errors:
             raise ValueError('Duplicated slices.')
