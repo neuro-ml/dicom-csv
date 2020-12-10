@@ -8,7 +8,7 @@ from .utils import Series, ORIENTATION, extract_dims, split_floats, zip_equal, c
 
 __all__ = [
     'get_orientation_matrix', 'restore_orientation_matrix',
-    'normalize_orientation', 'get_slice_spacing',
+    'normalize_orientation', 'get_slice_spacing', 'locations_to_spacing',
     'get_voxel_spacing', 'get_flipped_axes', 'get_axes_permutation',
     'get_image_position_patient', 'get_slice_locations', 'get_image_plane', 'Plane',
     'get_pixel_spacing', 'order_series'
@@ -46,22 +46,33 @@ def get_slice_spacing(series: Series, max_delta: float = 0.1, errors: bool = Tru
     If the series doesn't have constant spacing - raises ValueError if ``errors`` is True,
     returns ``np.nan`` otherwise.
     """
-    deltas = _get_slices_deltas(series)
+    return locations_to_spacing(sorted(get_slice_locations(series)), max_delta, errors)
 
-    if len(series) <= 1:
-        if errors:
-            raise ValueError('Need at least 2 instances in a series to calculate slice spacing.')
-        return np.nan
-    if np.isclose(deltas, 0).any():
-        if errors:
-            raise ValueError('Duplicated slices.')
-        return np.nan
-    if deltas.max() - deltas.min() > max_delta:
-        if errors:
-            raise ValueError('Non-constant slice spacing.')
-        return np.nan
 
-    return deltas.mean()
+def locations_to_spacing(locations: Sequence[float], max_delta: float = 0.1, errors: bool = True):
+    try:
+        if len(locations) <= 1:
+            raise ValueError('Need at least 2 locations to calculate spacing.')
+
+        deltas = np.diff(locations)
+
+        if np.isclose(deltas, 0).any():
+            raise ValueError('Duplicated locations.')
+        if len(np.unique(np.sign(deltas))) != 1:
+            raise ValueError('The locations are not monotonic.')
+
+        deltas = np.abs(deltas)
+        min_, max_ = deltas.min(), deltas.max()
+        diff = max_ - min_
+        if diff > max_delta:
+            raise ValueError(f'Non-constant spacing, ranging from {min_} to {max_} (delta: {diff}).')
+
+        return deltas.mean()
+
+    except ValueError:
+        if errors:
+            raise
+        return np.nan
 
 
 @csv_series
