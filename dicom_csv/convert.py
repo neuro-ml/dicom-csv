@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from pydicom.uid import generate_uid
 
@@ -44,11 +45,13 @@ def split_volume(instance: Instance) -> Series:
 
 
 def _exclude_callback(dataset, data_element):
+    warnings.warn('depricate, do not use')
     if data_element.tag in EXCLUDE_TAGS:
         del dataset[data_element.tag]
 
 
-def _get_default_frame(instance, shared_tags):
+def depricate_get_default_frame(instance, shared_tags):
+    warnings.warn('depricate, do not use')
     """Extracts a metadata from volumetric enhanced instance, drops heavy tags."""
     # TODO: is it ok?
     default_frame = instance  # _bufferize_instance(instance3d)
@@ -56,6 +59,20 @@ def _get_default_frame(instance, shared_tags):
     for tag in shared_tags:
         default_frame.add(tag)
     return default_frame
+
+
+def delete_tags(instance, tags):
+    for tag in tags:
+        if tag in instance:
+            del instance[tag]
+
+
+def _get_default_frame(instance, shared_tags):
+    """Extracts a metadata from volumetric enhanced instance, drops heavy tags."""
+    delete_tags(instance, EXCLUDE_TAGS.keys())
+    for tag in shared_tags:
+        instance.add(tag)
+    return instance
 
 
 def _get_shared_tags(shared_tags):

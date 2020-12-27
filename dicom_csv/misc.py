@@ -130,6 +130,9 @@ def construct_nifti(series: Series):
 
     # Looks like Nifti1Image overwrites OM if it is provided in header
     # see https://github.com/nipy/nibabel/blob/master/nibabel/nifti1.py Nifti1Header.set_qform()
+
+    # About qform, sform
+    # https://nifti.nimh.nih.gov/nifti-1/documentation/nifti1fields/nifti1fields_pages/qsform_brief_usage
     header = Nifti1Header()
     header.set_data_shape(data_shape)
     array = stack_images(series)
