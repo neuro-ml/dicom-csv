@@ -14,6 +14,10 @@ Instance = Dataset
 Series = Instances = Sequence[Dataset]
 
 
+class TagMissingError(AttributeError):
+    pass
+
+
 def split_floats(string, sep=','):
     return list(map(float, string.split(sep)))
 

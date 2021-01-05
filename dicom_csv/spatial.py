@@ -4,7 +4,7 @@ from typing import Sequence, Tuple, Union
 from pydicom import Dataset
 from dicom_csv.interface import csv_series, out_csv
 from enum import Enum
-from .utils import Series, ORIENTATION, extract_dims, split_floats, zip_equal, contains_info, collect
+from .utils import Series, ORIENTATION, extract_dims, split_floats, zip_equal, contains_info, collect, TagMissingError
 
 __all__ = [
     'get_orientation_matrix', 'restore_orientation_matrix',
@@ -102,7 +102,7 @@ def _get_image_orientation_patient(instance: Dataset):
     try:
         return np.array(list(map(float, instance.ImageOrientationPatient)))
     except AttributeError as e:
-        raise AttributeError('The tag "ImageOrientationPatient" is missing.') from e
+        raise TagMissingError('ImageOrientationPatient') from e
 
 
 @csv_series
@@ -123,7 +123,7 @@ def get_image_position_patient(series: Series):
     try:
         return np.stack([s.ImagePositionPatient for s in series])
     except AttributeError as e:
-        raise AttributeError('The tag "ImagePositionPatient" is missing.') from e
+        raise TagMissingError('ImagePositionPatient') from e
 
 
 @csv_series
