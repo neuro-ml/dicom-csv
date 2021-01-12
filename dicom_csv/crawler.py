@@ -121,26 +121,27 @@ def extract_meta(instance: Dataset, read_pixel_array: bool = False) -> dict:
 
 
 def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True, verbose: int = 0,
-              read_pixel_array: bool = False, force: bool = True, unpack_volumetric: bool = True) -> pd.DataFrame:
+              read_pixel_array: bool = False, force: bool = True, unpack_volumetric: bool = True,
+              total: bool = False) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
 
     Parameters
-    ---
-    top - PathLike,
+    ----------
+    top: PathLike
         path to crawled folder
-
-    ignore_extensions - Sequence,
+    ignore_extensions: Sequence
         list of extensions to skip during crawling
-
-    relative - bool,
+    relative: bool
         whether the ``PathToFolder`` attribute should be relative to ``top`` default is True.
-
-    verbose - int,
+    verbose: int
         the verbosity level:
             | 0 - no progressbar
             | 1 - progressbar with iterations count
             | 2 - progressbar with filenames
+    total: bool
+        whether to show the total number of files in the progressbar.
+        This is adds a bit of overhead, because each file will be visited a second time (without being opened).
 
     References
     ----------
@@ -163,8 +164,16 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
         if not extension.startswith('.'):
             raise ValueError(f'Each extension must start with a dot: "{extension}".')
 
+    n_files = None
+    if total and verbose:
+        n_files = 0
+        for root, _, files in os.walk(top, onerror=_throw, followlinks=True):
+            for filename in files:
+                if not any(filename.endswith(ext) for ext in ignore_extensions):
+                    n_files += 1
+
     result = []
-    bar = tqdm(disable=not verbose)
+    bar = tqdm(disable=not verbose, total=n_files)
     for root, _, files in os.walk(top, onerror=_throw, followlinks=True):
         root = Path(root)
         rel_path = root.relative_to(top)
