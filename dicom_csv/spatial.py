@@ -4,7 +4,8 @@ from typing import Sequence, Tuple, Union
 from pydicom import Dataset
 from dicom_csv.interface import csv_series, out_csv
 from enum import Enum
-from .utils import Series, ORIENTATION, extract_dims, split_floats, zip_equal, contains_info, collect, TagMissingError
+from .utils import Series, ORIENTATION, extract_dims, split_floats, zip_equal, contains_info, collect
+from .exceptions import *
 
 __all__ = [
     'get_orientation_matrix', 'restore_orientation_matrix',
@@ -50,29 +51,25 @@ def get_slice_spacing(series: Series, max_delta: float = 0.1, errors: bool = Tru
 
 
 def locations_to_spacing(locations: Sequence[float], max_delta: float = 0.1, errors: bool = True):
-    try:
-        if len(locations) <= 1:
-            raise ValueError('Need at least 2 locations to calculate spacing.')
-
-        deltas = np.diff(locations)
-
-        if np.isclose(deltas, 0).any():
-            raise ValueError('Duplicated locations.')
-        if len(np.unique(np.sign(deltas))) != 1:
-            raise ValueError('The locations are not monotonic.')
-
-        deltas = np.abs(deltas)
-        min_, max_ = deltas.min(), deltas.max()
-        diff = max_ - min_
-        if diff > max_delta:
-            raise ValueError(f'Non-constant spacing, ranging from {min_} to {max_} (delta: {diff}).')
-
-        return deltas.mean()
-
-    except ValueError:
+    def throw(err):
         if errors:
-            raise
+            raise err
         return np.nan
+
+    if len(locations) <= 1:
+        return throw(ValueError('Need at least 2 locations to calculate spacing.'))
+
+    deltas = np.diff(locations)
+    if len(np.unique(np.sign(deltas))) != 1:
+        return throw(ConsistencyError('The locations are not strictly monotonic.'))
+
+    deltas = np.abs(deltas)
+    min_, max_ = deltas.min(), deltas.max()
+    diff = max_ - min_
+    if diff > max_delta:
+        return throw(ConsistencyError(f'Non-constant spacing, ranging from {min_} to {max_} (delta: {diff}).'))
+
+    return deltas.mean()
 
 
 @csv_series
@@ -111,7 +108,7 @@ def get_orientation_matrix(series: Series):
     # TODO: check if it always stored in a column-wise fashion
     om = _get_image_orientation_patient(series[0])
     if not np.all([np.allclose(om, _get_image_orientation_patient(x)) for x in series]):
-        raise ValueError('Orientation matrix varies across slices.')
+        raise ConsistencyError('Orientation matrix varies across slices.')
 
     x, y = om.reshape(2, 3)
     return np.stack([x, y, np.cross(x, y)])
@@ -131,7 +128,7 @@ def get_pixel_spacing(series: Series) -> Tuple[float, float]:
     """Returns pixel spacing (two numbers) in mm."""
     pixel_spacings = np.stack([s.PixelSpacing for s in series])
     if (pixel_spacings.max(axis=0) - pixel_spacings.min(axis=0)).max() > 0.01:
-        raise ValueError('The series has inconsistent pixel spacing.')
+        raise ConsistencyError('The series has inconsistent pixel spacing.')
     return pixel_spacings[0]
 
 
@@ -154,6 +151,7 @@ def get_image_size(series: Series):
     return rows, columns, slices
 
 
+@np.deprecate
 def order_slice_locations(dicom_metadata: pd.Series):
     locations = split_floats(dicom_metadata.SliceLocations)
     if np.any([np.isnan(loc) for loc in locations]):
