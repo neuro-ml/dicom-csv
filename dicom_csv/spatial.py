@@ -47,7 +47,14 @@ def get_slice_spacing(series: Series, max_delta: float = 0.1, errors: bool = Tru
     If the series doesn't have constant spacing - raises ValueError if ``errors`` is True,
     returns ``np.nan`` otherwise.
     """
-    return locations_to_spacing(sorted(get_slice_locations(series)), max_delta, errors)
+    try:
+        locations = get_slice_locations(series)
+    except ConsistencyError:
+        if errors:
+            raise
+        return np.nan
+
+    return locations_to_spacing(sorted(locations), max_delta, errors)
 
 
 def locations_to_spacing(locations: Sequence[float], max_delta: float = 0.1, errors: bool = True):
