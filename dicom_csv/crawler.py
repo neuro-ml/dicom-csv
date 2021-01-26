@@ -167,10 +167,13 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
     n_files = None
     if total and verbose:
         n_files = 0
+        bar = tqdm(desc='Counting files')
         for root, _, files in os.walk(top, onerror=_throw, followlinks=True):
             for filename in files:
                 if not any(filename.endswith(ext) for ext in ignore_extensions):
                     n_files += 1
+                    bar.update()
+        bar.close()
 
     result = []
     bar = tqdm(disable=not verbose, total=n_files)
