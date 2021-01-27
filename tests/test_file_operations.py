@@ -1,9 +1,17 @@
 from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
+import pydicom
 import pytest
 
-from dicom_csv import join_tree, aggregate_images, load_series
+from dicom_csv import join_tree, aggregate_images, order_series, stack_images
+
+
+def load_series(row, base_path):
+    dicoms = [pydicom.dcmread(Path(base_path) / row.PathToFolder / file) for file in row.FileNames.split('/')]
+    dicoms = order_series(dicoms)
+    return stack_images(dicoms, -1)
 
 
 @pytest.fixture
@@ -36,6 +44,6 @@ def test_aggregation(meta, tests_folder):
     sorted_images = aggregate_images(meta, by, process_series=lambda series: series.sort_values('FileName'))
     assert len(images) == len(sorted_images) == 14
 
-    x = load_series(images.loc[0], base_path, orientation=True)
-    y = load_series(sorted_images.loc[0], base_path, orientation=True)
+    x = load_series(images.loc[0], base_path)
+    y = load_series(sorted_images.loc[0], base_path)
     np.testing.assert_array_almost_equal(x, y)

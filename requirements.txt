@@ -1,5 +1,4 @@
-nibabel
-pydicom==2.*
+pydicom>=2.0<3.0
 pandas
 numpy
 tqdm

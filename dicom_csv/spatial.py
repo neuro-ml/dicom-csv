@@ -9,7 +9,7 @@ from .exceptions import *
 
 __all__ = [
     'get_orientation_matrix', 'restore_orientation_matrix',
-    'normalize_orientation', 'get_slice_spacing', 'locations_to_spacing',
+    'get_slice_spacing', 'locations_to_spacing',
     'get_voxel_spacing', 'get_flipped_axes', 'get_axes_permutation',
     'get_image_position_patient', 'get_slice_locations', 'get_image_plane', 'Plane',
     'get_pixel_spacing', 'order_series'
