@@ -25,31 +25,6 @@ class NormalizeSliceOrientation(NamedTuple):
     flip_axes: tuple
 
 
-# # TODO: Returns list if dicom_csv.interface.RowIndex instances, only tested for Series
-# @csv_series
-# @out_csv
-# def order_series(series: Series, decreasing=True):
-#     """Returns sequence of instances in decreasing/increasing order of their slice locations."""
-#     slices_location = get_slice_locations(series)
-#     slices_order = np.argsort(slices_location)
-#     if decreasing:
-#         slices_order = slices_order[::-1]
-#     return [series[i] for i in slices_order]
-
-
-# @csv_series
-# def get_image_plane(series: Series) -> Plane:
-#     """
-#     Returns main plane of the image if it exists. Might not work with large rotation, since there is no
-#     `main plane` in that case.
-#     """
-#     pos = get_image_position_patient(series)
-#     slices = get_slice_locations(series)
-#     slices_order = np.argsort(slices)
-#     index = np.argmax(np.abs(np.diff(pos[slices_order], axis=0)), axis=1)[0]
-#     return Plane(index)
-
-
 def _get_image_orientation_patient(instance: Dataset):
     try:
         return np.array(list(map(float, instance.ImageOrientationPatient)))
@@ -57,8 +32,21 @@ def _get_image_orientation_patient(instance: Dataset):
         raise TagMissingError('ImageOrientationPatient') from e
 
 
+def _get_image_position_patient(instance: Dataset):
+    try:
+        return np.array(list(map(float, instance.ImagePositionPatient)))
+    except AttributeError as e:
+        raise TagMissingError('ImagePositionPatient') from e
+
+
 @csv_series
-def _get_transition_matrix(series: Series):
+def get_image_position_patient(series: Series):
+    """Returns ImagePositionPatient stacked into array."""
+    return np.stack(list(map(_get_image_position_patient, series)))
+
+
+@csv_series
+def _get_orientation_matrix(series: Series):
     """
     Returns a 3 x 3 orthogonal transition matrix from the image-based basis to the patient-based basis.
     Rows are coordinates of image-based basis vectors in the patient-based basis, while columns are
@@ -73,18 +61,18 @@ def _get_transition_matrix(series: Series):
     return np.stack([slc_row, slc_col, np.cross(slc_row, slc_col)])
 
 
-def _get_image_planes(transition_matrix):
-    return tuple(Plane(i) for i in np.argmax(np.abs(transition_matrix), axis=1))
+def _get_image_planes(orientation_matrix):
+    return tuple(Plane(i) for i in np.argmax(np.abs(orientation_matrix), axis=1))
 
 
 @csv_series
-def get_slice_plane(series: Series) -> Plane:
-    return _get_image_planes(_get_transition_matrix(series))[2]
+def get_slices_plane(series: Series) -> Plane:
+    return _get_image_planes(_get_orientation_matrix(series))[2]
 
 
-def get_slice_orientation(series):
-    tm = _get_transition_matrix(series)
-    planes = _get_image_planes(tm)
+def get_slices_orientation(series):
+    om = _get_orientation_matrix(series)
+    planes = _get_image_planes(om)
 
     if set(planes) != {Plane.Sagittal, Plane.Coronal, Plane.Axial}:
         raise ValueError('Main image planes cannot be treated as saggital, coronal and axial.')
@@ -92,13 +80,13 @@ def get_slice_orientation(series):
     if planes[2] == Plane.Axial:
         transpose = planes[0] == Plane.Coronal
         if transpose:
-            tm = tm[[1, 0, 2]]
+            om = om[[1, 0, 2]]
 
         flip_axes = []
-        if tm[0, 0] < 0:
-            flip_axes.append(1)
-        if tm[1, 1] < 0:
+        if om[1, 1] < 0:
             flip_axes.append(0)
+        if om[0, 0] < 0:
+            flip_axes.append(1)
 
         return NormalizeSliceOrientation(transpose=transpose, flip_axes=tuple(flip_axes))
 
@@ -108,17 +96,8 @@ def get_slice_orientation(series):
 
 @csv_series
 def order_series(series: Series, decreasing=True):
-    slice_plane_index = get_slice_plane(series).value
-    return sorted(series, key=lambda s: s.ImagePositionPatient[slice_plane_index], reverse=decreasing)
-
-
-@csv_series
-def get_image_position_patient(series: Series):
-    """Returns ImagePositionPatient stacked into array."""
-    try:
-        return np.stack([s.ImagePositionPatient for s in series])
-    except AttributeError as e:
-        raise TagMissingError('ImagePositionPatient') from e
+    index = get_slices_plane(series).value
+    return sorted(series, key=lambda s: _get_image_position_patient(s)[index], reverse=decreasing)
 
 
 @csv_series
@@ -208,8 +187,8 @@ def get_image_size(series: Series):
 # ------------------ DEPRECATED ------------------------
 
 
-get_image_plane = np.deprecate(get_slice_plane, old_name='get_image_plane')
-get_orientation_matrix = np.deprecate(_get_transition_matrix, old_name='get_orientation_matrix')
+get_image_plane = np.deprecate(get_slices_plane, old_name='get_image_plane')
+get_orientation_matrix = np.deprecate(_get_orientation_matrix, old_name='get_orientation_matrix')
 get_xyz_spacing = np.deprecate(get_voxel_spacing, old_name='get_xyz_spacing')
 
 @np.deprecate
