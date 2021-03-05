@@ -13,6 +13,9 @@ __all__ = [
     'get_orientation_matrix', 'get_slice_plane', 'get_slices_plane', 'Plane', 'order_series',
     'get_slice_orientation', 'get_slices_orientation', 'NormalizeSlicesOrientation',
     'get_slice_locations', 'locations_to_spacing', 'get_slice_spacing', 'get_pixel_spacing', 'get_voxel_spacing',
+    # depcrecated
+    'get_axes_permutation', 'get_flipped_axes', 'get_image_plane', 
+    'get_image_position_patient', 'restore_orientation_matrix'
 ]
 
 
