@@ -27,7 +27,7 @@ def get_image(instance: Dataset):
 
 
 def stack_images(series: Series, axis: int = -1):
-    return np.moveaxis(np.array(list(map(get_image, series))), 0, axis)
+    return np.stack(list(map(get_image, series)), axis)
 
 
 # TODO: legacy support
