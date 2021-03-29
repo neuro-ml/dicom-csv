@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Sequence, Tuple, Union, NamedTuple
+import inspect
 from pydicom import Dataset
 from dicom_csv.interface import csv_series, out_csv
 from enum import Enum
@@ -11,7 +12,7 @@ from .exceptions import *
 __all__ = [
     'get_tag', 'get_common_tag', 
     'get_orientation_matrix', 'get_slice_plane', 'get_slices_plane', 'Plane', 'order_series',
-    'get_slice_orientation', 'get_slices_orientation', 'NormalizeSlicesOrientation',
+    'get_slice_orientation', 'get_slices_orientation', 'SlicesOrientation',
     'get_slice_locations', 'locations_to_spacing', 'get_slice_spacing', 'get_pixel_spacing', 'get_voxel_spacing',
     # depcrecated
     'get_axes_permutation', 'get_flipped_axes', 'get_image_plane', 
@@ -23,28 +24,39 @@ class Plane(Enum):
     Sagittal, Coronal, Axial = 0, 1, 2
 
 
-class NormalizeSlicesOrientation(NamedTuple):
+class SlicesOrientation(NamedTuple):
     transpose: bool
     flip_axes: tuple
 
-    def to_json(self):
-        return {'transpose': self.transpose, 'flip_axes': self.flip_axes}
 
-
-def get_tag(instance: Instance, tag):
+def get_tag(instance: Instance, tag, default=inspect.Parameter.empty):
     try:
         return getattr(instance, tag)
     except AttributeError as e:
-        raise TagMissingError(tag) from e
+        if default == inspect.Parameter.empty:
+            raise TagMissingError(tag) from e
+        else:
+            return default
 
 
-def get_common_tag(series: Series, tag):
-    unique_values = {get_tag(i, tag) for i in series}
-    if len(unique_values) > 1:
-        raise ConsistencyError(f'{tag} varies across instances.')
+def get_common_tag(series: Series, tag, default=inspect.Parameter.empty):
+    try:
+        try:
+            unique_values = {get_tag(i, tag) for i in series}
+        except TypeError:
+            raise TagTypeError('Unhashable tags are not supported.')
+
+        if len(unique_values) > 1:
+            raise ConsistencyError(f'{tag} varies across instances.')
     
-    value, = unique_values
-    return value
+        value, = unique_values
+        return value
+
+    except (TagMissingError, TagTypeError, ConsistencyError):
+        if default == inspect.Parameter.empty:
+            raise
+        else:
+            return default
 
 
 def _get_image_position_patient(instance: Instance):
@@ -92,7 +104,7 @@ def get_slices_plane(series: Series) -> Plane:
     return plane
 
 
-def get_slice_orientation(instance: Instance) -> NormalizeSlicesOrientation:
+def get_slice_orientation(instance: Instance) -> SlicesOrientation:
     om = _get_orientation_matrix(instance)
     planes = _get_image_planes(om)
 
@@ -112,11 +124,11 @@ def get_slice_orientation(instance: Instance) -> NormalizeSlicesOrientation:
     if om[0, 0] < 0:
         flip_axes.append(1)
 
-    return NormalizeSlicesOrientation(transpose=transpose, flip_axes=tuple(flip_axes))
+    return SlicesOrientation(transpose=transpose, flip_axes=tuple(flip_axes))
 
 
 @csv_series    
-def get_slices_orientation(series: Series) -> NormalizeSlicesOrientation:
+def get_slices_orientation(series: Series) -> SlicesOrientation:
     orientations = set(map(get_slice_orientation, series))
     if len(orientations) > 1:
         raise ConsistencyError('Slice orientation varies across slices.')
