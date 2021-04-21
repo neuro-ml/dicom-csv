@@ -13,10 +13,10 @@ __all__ = [
     'get_tag', 'get_common_tag', 
     'get_orientation_matrix', 'get_slice_plane', 'get_slices_plane', 'Plane', 'order_series',
     'get_slice_orientation', 'get_slices_orientation', 'SlicesOrientation',
-    'get_slice_locations', 'locations_to_spacing', 'get_slice_spacing', 'get_pixel_spacing', 'get_voxel_spacing',
-    # depcrecated
+    'get_slice_locations', 'locations_to_spacing', 'get_slice_spacing', 'get_pixel_spacing', 'get_voxel_spacing', 'get_image_position_patient',
+    # deprecated
     'get_axes_permutation', 'get_flipped_axes', 'get_image_plane', 
-    'get_image_position_patient', 'restore_orientation_matrix'
+    'restore_orientation_matrix'
 ]
 
 
@@ -61,6 +61,12 @@ def get_common_tag(series: Series, tag, default=inspect.Parameter.empty):
 
 def _get_image_position_patient(instance: Instance):
     return np.array(list(map(float, get_tag(instance, 'ImagePositionPatient'))))
+
+
+@csv_series
+def get_image_position_patient(series: Series):
+    """Returns ImagePositionPatient stacked into array."""
+    return np.stack(list(map(_get_image_position_patient, series)))
 
 
 def _get_image_orientation_patient(instance: Instance):
@@ -235,13 +241,6 @@ get_xyz_spacing = np.deprecate(get_voxel_spacing, old_name='get_xyz_spacing')
 @np.deprecate
 def get_axes_permutation(row: pd.Series):
     return np.abs(get_orientation_matrix(row)).argmax(axis=0)
-
-
-@np.deprecate
-@csv_series
-def get_image_position_patient(series: Series):
-    """Returns ImagePositionPatient stacked into array."""
-    return np.stack(list(map(_get_image_position_patient, series)))
 
 
 @np.deprecate
