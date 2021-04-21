@@ -1,5 +1,7 @@
 class TagMissingError(AttributeError):
-    pass
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.name = name
 
 
 class TagTypeError(TypeError):

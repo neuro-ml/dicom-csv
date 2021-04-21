@@ -1,16 +1,16 @@
-import numpy as np
-import pandas as pd
 from typing import Sequence, Tuple, Union, NamedTuple
 import inspect
-from pydicom import Dataset
-from dicom_csv.interface import csv_series, out_csv
 from enum import Enum
-from itertools import groupby
+
+import numpy as np
+import pandas as pd
+
+from .interface import csv_series
 from .utils import Series, Instance, ORIENTATION, extract_dims, split_floats, zip_equal, contains_info, collect
 from .exceptions import *
 
 __all__ = [
-    'get_tag', 'get_common_tag', 
+    'get_tag', 'get_common_tag',
     'get_orientation_matrix', 'get_slice_plane', 'get_slices_plane', 'Plane', 'order_series',
     'get_slice_orientation', 'get_slices_orientation', 'SlicesOrientation',
     'get_slice_locations', 'locations_to_spacing', 'get_slice_spacing', 'get_pixel_spacing', 'get_voxel_spacing', 'get_image_position_patient',
@@ -48,7 +48,7 @@ def get_common_tag(series: Series, tag, default=inspect.Parameter.empty):
 
         if len(unique_values) > 1:
             raise ConsistencyError(f'{tag} varies across instances.')
-    
+
         value, = unique_values
         return value
 
@@ -116,10 +116,10 @@ def get_slice_orientation(instance: Instance) -> SlicesOrientation:
 
     if set(planes) != {Plane.Sagittal, Plane.Coronal, Plane.Axial}:
         raise ValueError('Main image planes cannot be treated as saggital, coronal and axial.')
-        
+
     if planes[2] != Plane.Axial:
         raise NotImplementedError('We do not know what is normal orientation for non-axial slice.')
-    
+
     transpose = planes[0] == Plane.Coronal
     if transpose:
         om = om[[1, 0, 2]]
@@ -133,12 +133,12 @@ def get_slice_orientation(instance: Instance) -> SlicesOrientation:
     return SlicesOrientation(transpose=transpose, flip_axes=tuple(flip_axes))
 
 
-@csv_series    
+@csv_series
 def get_slices_orientation(series: Series) -> SlicesOrientation:
     orientations = set(map(get_slice_orientation, series))
     if len(orientations) > 1:
         raise ConsistencyError('Slice orientation varies across slices.')
-    
+
     orientation, = orientations
     return orientation
 
@@ -150,14 +150,14 @@ def order_series(series: Series, decreasing=True) -> Series:
 
 
 @csv_series
-def get_slice_locations(series: Series) -> Sequence[float]:
+def get_slice_locations(series: Series) -> np.ndarray:
     """
     Computes slices location from ImagePositionPatient. 
     WARNING: the order of slice locations can be both increasing or decreasing for ordered series 
     (see order_series).
     """
     om = get_orientation_matrix(series)
-    return [_get_image_position_patient(i) @ om[-1] for i in series]
+    return np.array([_get_image_position_patient(i) @ om[-1] for i in series])
 
 
 @csv_series
@@ -237,6 +237,7 @@ def get_image_size(series: Series):
 
 get_image_plane = np.deprecate(get_slices_plane, old_name='get_image_plane')
 get_xyz_spacing = np.deprecate(get_voxel_spacing, old_name='get_xyz_spacing')
+
 
 @np.deprecate
 def get_axes_permutation(row: pd.Series):
