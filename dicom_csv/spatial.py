@@ -1,19 +1,21 @@
+from itertools import groupby
 from typing import Sequence, Tuple, Union, NamedTuple
-import inspect
 from enum import Enum
 
 import numpy as np
 import pandas as pd
 
 from .interface import csv_series
+from .tags import get_common_tag, get_tag, drop_duplicated_instances
 from .utils import Series, Instance, ORIENTATION, extract_dims, split_floats, zip_equal, contains_info, collect
 from .exceptions import *
+from .misc import get_image
 
 __all__ = [
-    'get_tag', 'get_common_tag',
     'get_orientation_matrix', 'get_slice_plane', 'get_slices_plane', 'Plane', 'order_series',
     'get_slice_orientation', 'get_slices_orientation', 'SlicesOrientation',
-    'get_slice_locations', 'locations_to_spacing', 'get_slice_spacing', 'get_pixel_spacing', 'get_voxel_spacing', 'get_image_position_patient',
+    'get_slice_locations', 'locations_to_spacing', 'get_slice_spacing', 'get_pixel_spacing',
+    'get_voxel_spacing', 'get_image_position_patient', 'drop_duplicated_slices',
     # deprecated
     'get_axes_permutation', 'get_flipped_axes', 'get_image_plane', 
     'restore_orientation_matrix'
@@ -27,36 +29,6 @@ class Plane(Enum):
 class SlicesOrientation(NamedTuple):
     transpose: bool
     flip_axes: tuple
-
-
-def get_tag(instance: Instance, tag, default=inspect.Parameter.empty):
-    try:
-        return getattr(instance, tag)
-    except AttributeError as e:
-        if default == inspect.Parameter.empty:
-            raise TagMissingError(tag) from e
-        else:
-            return default
-
-
-def get_common_tag(series: Series, tag, default=inspect.Parameter.empty):
-    try:
-        try:
-            unique_values = {get_tag(i, tag) for i in series}
-        except TypeError:
-            raise TagTypeError('Unhashable tags are not supported.')
-
-        if len(unique_values) > 1:
-            raise ConsistencyError(f'{tag} varies across instances.')
-
-        value, = unique_values
-        return value
-
-    except (TagMissingError, TagTypeError, ConsistencyError):
-        if default == inspect.Parameter.empty:
-            raise
-        else:
-            return default
 
 
 def _get_image_position_patient(instance: Instance):
@@ -230,6 +202,29 @@ def get_image_size(series: Series):
     columns = get_common_tag(series, 'Columns')
     slices = len(series)
     return rows, columns, slices
+
+
+def drop_duplicated_slices(series: Series, tolerance_hu=1) -> Series:
+    series = drop_duplicated_instances(series)
+    
+    indices = list(range(len(series)))
+    slice_locations = get_slice_locations(series)
+    try:
+        instance_numbers = [get_tag(i, 'InstanceNumber') for i in series]
+        indices = sorted(indices, key=lambda i: (slice_locations[i], instance_numbers[i]))
+    except TagMissingError:
+        indices = sorted(indices, key=lambda i: slice_locations[i])
+    
+    new_indices = []
+    for _, group in groupby(indices, key=lambda i: slice_locations[i]):
+        group = list(group)
+        image = get_image(series[group[0]])
+        if not all(np.allclose(get_image(series[i]), image, atol=tolerance_hu) for i in group):
+            raise ValueError(
+                'Slices have same locations, but different pixel arrays.')
+        new_indices.append(group[0])
+
+    return [series[i] for i in sorted(new_indices)]
 
 
 # ------------------ DEPRECATED ------------------------
