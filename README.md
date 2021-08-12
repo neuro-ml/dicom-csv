@@ -31,6 +31,17 @@ pip install -e .
 3 rows x 155 columns
 
 
+# Example load 3D image
+from a series of dicom files (each containing 2D image)
+
+```python
+>>> from dicom_csv import join_tree, order_series, stack_images
+>>> folder = '/path/to/folder/'
+>>> meta = join_tree(folder, verbose=2)
+>>> uid = '...' # unique identifier of a series, you could list them by `meta.SeriesInstanceUID.unique()`
+>>> series = meta.query("SeriesInstanceUID==@uid")
+>>> image3d = stack_images(order_series(series))
+```
 
 # Documentation
 
