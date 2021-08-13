@@ -43,7 +43,7 @@ from a series of dicom files (each containing 2D image)
 >>> uid = '...' # unique identifier of a series, you could list them by `meta.SeriesInstanceUID.unique()`
 >>> series = meta.query("SeriesInstanceUID==@uid")
 >>> images2d = [dcmread(folder / row.PathToFolder / row.FileName) for row in series.iterrows()] 
->>> image3d = stack_images(order_series(series))
+>>> image3d = stack_images(order_series(images2d))
 ```
 
 # Documentation
