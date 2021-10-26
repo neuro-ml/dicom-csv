@@ -28,7 +28,6 @@ class Contour:
     contour_data: dict
     reference_series_instance_uid: str
     coordinate_space_patient: bool=True
-    # optional, if coordinate_space_patient=False
     image_shape: tuple=None
     image_position_patient: dict=None
     image_plane: Plane=None
@@ -38,7 +37,7 @@ class Contour:
         if self.image_plane == Plane.Axial:
             a, b = 0, 1
         elif self.image_plane == Plane.Sagittal:
-            a, b = 2, 0
+            a, b = 0, 1#2, 0
         elif self.image_plane == Plane.Coronal:
             a, b = 1, 2 # TODO
         else:
@@ -117,11 +116,22 @@ def _contour_to_image(contours_patient: Contour, orientation_matrix: np.ndarray,
         if uid in contours_patient.contour_data.keys():
             slice_contour = contours_patient.contour_data[uid]
             for coords in slice_contour:
-                coords_image = ((coords - image_position_patient[uid]) / voxel_spacing) @ orientation_matrix 
+#                 coords_image = ((coords - image_position_patient[uid]) / voxel_spacing) @ orientation_matrix
+#                 if image_plane == Plane.Sagittal:
+#                     coords_image = ((coords - image_position_patient[uid]) / voxel_spacing) @ orientation_matrix
+#                 else:
+                coords_image = (coords - image_position_patient[uid]) @ orientation_matrix.T / voxel_spacing
                 # first divide by voxel_spacing, o/w multiplying by OM could messed up columns order
                 _update_dict_list_key(contours_image, uid, coords_image)
-    return Contour(contours_image, contours_patient.contour_name, contours_patient.reference_series_instance_uid,
-                   False, image_size, image_position_patient, image_plane)
+    return Contour(
+        contour_data=contours_image,
+        contour_name=contours_patient.contour_name,
+        reference_series_instance_uid=contours_patient.reference_series_instance_uid,
+        coordinate_space_patient=False,
+        image_shape=image_size,
+        image_position_patient=image_position_patient,
+        image_plane=image_plane
+    )
 
 
 def contours_to_image(series: Series, rtstruct: pydicom.dataset.Dataset):
@@ -138,7 +148,7 @@ def contours_to_image(series: Series, rtstruct: pydicom.dataset.Dataset):
     image_plane = get_slices_plane(series)
     
     # TODO: Consider only work with 2D coords, completely dropping the third column
-    dx_dy_dz = np.abs(dx_dy_dz @ np.round(om)) # to fix values order according to plane
+#     dx_dy_dz = np.abs(dx_dy_dz @ np.round(om)) # to fix values order according to plane
     pos = dict(zip(sop_uids, pos))
     
     contours_patient = read_rtstruct(rtstruct) # potential AttributeError if no ContourSequence
