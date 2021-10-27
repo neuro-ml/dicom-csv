@@ -88,4 +88,6 @@ def get_nifti(series: Series, mask: np.ndarray=None):
     voxel = list(get_voxel_spacing(series))
     affine = _get_affine(om, pos, voxel)
     header = _get_nifti_header(image.shape)
-    return Nifti1Image(image, affine, header=header)
+    if mask is None:
+        return Nifti1Image(image, affine, header=header)
+    return Nifti1Image(image, affine, header=header), Nifti1Image(mask, affine, header=header)
