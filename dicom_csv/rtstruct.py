@@ -11,7 +11,7 @@ from dicom_csv.spatial import (get_orientation_matrix, get_voxel_spacing,
 
 # TODO: fix logic -> read -> move to voxel space -> move to mask
 # TODO: Consider only work with 2D coords, completely dropping the third column
-
+# See https://dicom.innolitics.com/ciods/rt-structure-set/roi-contour/30060039/30060040/30060050 for details
 
 def _update_dict_list_key(d, key, value):
     """Modifies input dictionary inplace."""
