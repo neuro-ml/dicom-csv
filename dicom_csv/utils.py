@@ -83,6 +83,11 @@ def _get_affine(om: np.ndarray, pos: list, voxel: list):
 
 
 def get_nifti(series: Series, mask: np.ndarray=None):
+    """
+    Construct NIFTI image from list of DICOMs.
+    """
+    series = order_series(series)
+    image = stack_images(series)
     om = get_orientation_matrix(series)
     pos = list(get_image_position_patient(series)[0])
     voxel = list(get_voxel_spacing(series))
