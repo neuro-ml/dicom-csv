@@ -6,9 +6,7 @@ import pandas as pd
 from pydicom import Dataset, dcmread, dcmwrite
 from pydicom.dataset import FileMetaDataset
 from pydicom.uid import ImplicitVRLittleEndian
-from dicom_csv.utils import Series
-from dicom_csv.spatial import get_voxel_spacing, get_orientation_matrix, get_image_position_patient
-from nibabel import Nifti1Header, Nifti1Image
+
 
 PathLike = Union[Path, str]
 ORIENTATION = [f'ImageOrientationPatient{i}' for i in range(6)]
@@ -63,36 +61,3 @@ def set_file_meta(instance: Dataset):
 
 def collect(func):
     return lambda *args, **kwargs: list(func(*args, **kwargs))
-
-
-def _get_nifti_header(shape: tuple):
-    header = Nifti1Header()
-    header.set_data_shape(shape)
-    header.set_dim_info(slice=2)
-    header.set_xyzt_units('mm')
-    return header
-
-
-def _get_affine(om: np.ndarray, pos: list, voxel: list):
-    voxel = np.diag(voxel)
-    OM = np.eye(4)
-    om = om @ voxel
-    OM[:3, :3]= om
-    OM[:3, 3] = pos
-    return OM
-
-
-def get_nifti(series: Series, mask: np.ndarray=None):
-    """
-    Construct NIFTI image from list of DICOMs.
-    """
-    series = order_series(series)
-    image = stack_images(series)
-    om = get_orientation_matrix(series)
-    pos = list(get_image_position_patient(series)[0])
-    voxel = list(get_voxel_spacing(series))
-    affine = _get_affine(om, pos, voxel)
-    header = _get_nifti_header(image.shape)
-    if mask is None:
-        return Nifti1Image(image, affine, header=header)
-    return Nifti1Image(image, affine, header=header), Nifti1Image(mask, affine, header=header)
