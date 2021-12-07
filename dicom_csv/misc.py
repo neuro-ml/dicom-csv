@@ -19,7 +19,7 @@ def get_image(instance: Dataset, to_color_space: Optional[str] = None):
             x = int(x)
         return x
 
-    if to_color_space is None or not hasattr(instance, 'PhotometricInterpretation'):
+    if to_color_space is None:
         array = instance.pixel_array
     else:
         array = convert_color_space(instance.pixel_array, instance.PhotometricInterpretation, to_color_space)
