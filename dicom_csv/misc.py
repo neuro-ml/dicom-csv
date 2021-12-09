@@ -15,14 +15,14 @@ __all__ = 'get_image', 'stack_images'
 
 def get_image(instance: Dataset, to_color_space: Optional[str] = None):
     def _to_int(x):
+        # this little trick helps to avoid unneeded type casting
         if x == int(x):
             x = int(x)
         return x
 
-    if to_color_space is None:
-        array = instance.pixel_array
-    else:
-        array = convert_color_space(instance.pixel_array, instance.PhotometricInterpretation, to_color_space)
+    array = instance.pixel_array
+    if to_color_space is not None:
+        array = convert_color_space(array, instance.PhotometricInterpretation, to_color_space)
 
     slope, intercept = instance.get('RescaleSlope'), instance.get('RescaleIntercept')
     if slope is not None and slope != 1:
