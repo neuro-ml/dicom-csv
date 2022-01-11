@@ -28,3 +28,7 @@ jobs:
       - name: Install
         run: |
           pip install dist/*
+
+      - name: Make sure all is importable
+        run: |
+          python -c "import dicom_csv"

@@ -32,6 +32,10 @@ setup(
     keywords=[],
     classifiers=classifiers.splitlines(),
     install_requires=requirements,
+    extras_require={
+        'nifti': 'nibabel',
+        'all': 'nibabel',
+    },
     python_requires='>=3.6',
     entry_points={
         'console_scripts': [
