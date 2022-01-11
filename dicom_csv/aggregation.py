@@ -4,7 +4,6 @@ from typing import Callable, Sequence, Union
 import pandas as pd
 import numpy as np
 
-from nibabel import Nifti1Header, Nifti1Image
 from .spatial import get_voxel_spacing, get_orientation_matrix, get_image_position_patient, order_series
 from .misc import stack_images
 from .utils import Series
@@ -111,6 +110,8 @@ def select(dataframe: pd.DataFrame, query: str, **where: str) -> pd.DataFrame:
 
 
 def _get_nifti_header(shape: tuple):
+    from nibabel import Nifti1Header
+
     header = Nifti1Header()
     header.set_data_shape(shape)
     header.set_dim_info(slice=2)
@@ -122,15 +123,17 @@ def _get_affine(om: np.ndarray, pos: list, voxel: list):
     voxel = np.diag(voxel)
     OM = np.eye(4)
     om = om @ voxel
-    OM[:3, :3]= om
+    OM[:3, :3] = om
     OM[:3, 3] = pos
     return OM
 
 
-def get_nifti(series: Series, mask: np.ndarray=None):
+def get_nifti(series: Series, mask: np.ndarray = None):
     """
     Construct NIFTI image from list of DICOMs.
     """
+    from nibabel import Nifti1Image
+
     series = order_series(series)
     image = stack_images(series)
     om = get_orientation_matrix(series)
