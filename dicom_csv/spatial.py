@@ -26,7 +26,13 @@ class Plane(Enum):
     Sagittal, Coronal, Axial = 0, 1, 2
 
 
+# TODO: deprecate
 class SlicesOrientation(NamedTuple):
+    """
+    Defines how slices should be transformed in order to be canonically oriented:
+    First transpose slices if ``transpose == True``.
+    Then flip slices along ``flip_axes`` (they already account for transposition). 
+    """
     transpose: bool
     flip_axes: tuple
 
@@ -36,7 +42,7 @@ def _get_image_position_patient(instance: Instance):
 
 
 @csv_series
-def get_image_position_patient(series: Series):
+def get_image_position_patient(series: Series) -> np.ndarray:
     """Returns ImagePositionPatient stacked into array."""
     return np.stack(list(map(_get_image_position_patient, series)))
 
@@ -54,8 +60,10 @@ def _get_orientation_matrix(instance: Instance):
 def get_orientation_matrix(series: Series) -> np.ndarray:
     """
     Returns a 3 x 3 orthogonal transition matrix from the image-based basis to the patient-based basis.
-    Rows are coordinates of image-based basis vectors in the patient-based basis, while columns are
-    coordinates of patient-based basis vectors in the image-based basis vectors.
+    Rows are coordinates of image-based basis vectors in the patient-based basis.
+    Columns are coordinates of patient-based basis vectors in the image-based basis vectors.
+
+    See https://dicom.innolitics.com/ciods/rt-dose/image-plane/00200037 for details.
     """
     om = _get_orientation_matrix(series[0])
     if not np.all([np.allclose(om, _get_orientation_matrix(i)) for i in series]):
@@ -64,27 +72,26 @@ def get_orientation_matrix(series: Series) -> np.ndarray:
     return om
 
 
-def _get_image_planes(orientation_matrix):
-    return tuple(Plane(i) for i in np.argmax(np.abs(orientation_matrix), axis=1))
+def _orientation_matrix_to_image_planes(om):
+    return tuple(Plane(i) for i in np.argmax(np.abs(om), axis=1))
+
+
+def orientation_matrix_to_slices_plane(om: np.ndarray) -> Plane:
+    return _orientation_matrix_to_image_planes(om)[2]
 
 
 def get_slice_plane(instance: Instance) -> Plane:
-    return _get_image_planes(_get_orientation_matrix(instance))[2]
+    return orientation_matrix_to_slices_plane(_get_orientation_matrix(instance))
 
 
 @csv_series
 def get_slices_plane(series: Series) -> Plane:
-    unique_planes = set(map(get_slice_plane, series))
-    if len(unique_planes) > 1:
-        raise ConsistencyError('Slice plane varies across slices.')
-
-    plane, = unique_planes
-    return plane
+    return orientation_matrix_to_slices_plane(get_orientation_matrix(series))
 
 
-def get_slice_orientation(instance: Instance) -> SlicesOrientation:
-    om = _get_orientation_matrix(instance)
-    planes = _get_image_planes(om)
+@np.deprecate
+def orientation_matrix_to_slices_orientation(om: np.ndarray) -> SlicesOrientation:
+    planes = _orientation_matrix_to_image_planes(om)
 
     if set(planes) != {Plane.Sagittal, Plane.Coronal, Plane.Axial}:
         raise ValueError('Main image planes cannot be treated as saggital, coronal and axial.')
@@ -105,18 +112,19 @@ def get_slice_orientation(instance: Instance) -> SlicesOrientation:
     return SlicesOrientation(transpose=transpose, flip_axes=tuple(flip_axes))
 
 
+@np.deprecate
+def get_slice_orientation(instance: Instance) -> SlicesOrientation:
+    return orientation_matrix_to_slices_orientation(_get_orientation_matrix(instance))
+
+
+@np.deprecate
 @csv_series
 def get_slices_orientation(series: Series) -> SlicesOrientation:
-    orientations = set(map(get_slice_orientation, series))
-    if len(orientations) > 1:
-        raise ConsistencyError('Slice orientation varies across slices.')
-
-    orientation, = orientations
-    return orientation
+    return orientation_matrix_to_slices_orientation(get_orientation_matrix(series))
 
 
 @csv_series
-def order_series(series: Series, decreasing=True) -> Series:
+def order_series(series: Series, decreasing: bool = True) -> Series:
     index = get_slices_plane(series).value
     return sorted(series, key=lambda s: _get_image_position_patient(s)[index], reverse=decreasing)
 
@@ -125,7 +133,7 @@ def order_series(series: Series, decreasing=True) -> Series:
 def get_slice_locations(series: Series) -> np.ndarray:
     """
     Computes slices location from ImagePositionPatient. 
-    WARNING: the order of slice locations can be both increasing or decreasing for ordered series 
+    NOTE: the order of slice locations can be both increasing or decreasing for ordered series 
     (see order_series).
     """
     om = get_orientation_matrix(series)
@@ -157,7 +165,7 @@ def get_slice_spacing(series: Series, max_delta: float = 0.1, errors: bool = Tru
     return locations_to_spacing(sorted(locations), max_delta, errors)
 
 
-def locations_to_spacing(locations: Sequence[float], max_delta: float = 0.1, errors: bool = True):
+def locations_to_spacing(locations: Sequence[float], max_delta: float = 0.1, errors: bool = True) -> float:
     def throw(err):
         if errors:
             raise err
@@ -189,7 +197,7 @@ def get_pixel_spacing(series: Series) -> Tuple[float, float]:
 
 
 @csv_series
-def get_voxel_spacing(series: Series):
+def get_voxel_spacing(series: Series) -> Tuple[float, float, float]:
     """Returns voxel spacing: pixel spacing and distance between slices' centers."""
     dx, dy = get_pixel_spacing(series)
     dz = get_slice_spacing(series)
@@ -197,7 +205,7 @@ def get_voxel_spacing(series: Series):
 
 
 @csv_series
-def get_image_size(series: Series):
+def get_image_size(series: Series) -> Tuple[int, int, int]:
     rows = get_common_tag(series, 'Rows')
     columns = get_common_tag(series, 'Columns')
     slices = len(series)
@@ -206,7 +214,7 @@ def get_image_size(series: Series):
 
 def drop_duplicated_slices(series: Series, tolerance_hu=1) -> Series:
     series = drop_duplicated_instances(series)
-    
+
     indices = list(range(len(series)))
     slice_locations = get_slice_locations(series)
     try:
