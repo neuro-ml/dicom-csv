@@ -2,6 +2,11 @@
 from typing import Callable, Sequence, Union
 
 import pandas as pd
+import numpy as np
+
+from .spatial import get_voxel_spacing, get_orientation_matrix, get_image_position_patient, order_series
+from .misc import stack_images
+from .utils import Series
 
 __all__ = 'aggregate_images', 'normalize_identifiers', 'select'
 
@@ -102,3 +107,40 @@ def normalize_identifiers(metadata: pd.DataFrame) -> pd.DataFrame:
 def select(dataframe: pd.DataFrame, query: str, **where: str) -> pd.DataFrame:
     query = ' '.join(query.format(**where).splitlines())
     return dataframe.query(query).dropna(axis=1, how='all').dropna(axis=0, how='all')
+
+
+def _get_nifti_header(shape: tuple):
+    from nibabel import Nifti1Header
+
+    header = Nifti1Header()
+    header.set_data_shape(shape)
+    header.set_dim_info(slice=2)
+    header.set_xyzt_units('mm')
+    return header
+
+
+def _get_affine(om: np.ndarray, pos: list, voxel: list):
+    voxel = np.diag(voxel)
+    OM = np.eye(4)
+    om = om @ voxel
+    OM[:3, :3] = om
+    OM[:3, 3] = pos
+    return OM
+
+
+def get_nifti(series: Series, mask: np.ndarray = None):
+    """
+    Construct NIFTI image from list of DICOMs.
+    """
+    from nibabel import Nifti1Image
+
+    series = order_series(series)
+    image = stack_images(series)
+    om = get_orientation_matrix(series)
+    pos = list(get_image_position_patient(series)[0])
+    voxel = list(get_voxel_spacing(series))
+    affine = _get_affine(om, pos, voxel)
+    header = _get_nifti_header(image.shape)
+    if mask is None:
+        return Nifti1Image(image, affine, header=header)
+    return Nifti1Image(image, affine, header=header), Nifti1Image(mask, affine, header=header)

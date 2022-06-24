@@ -7,6 +7,7 @@ from pydicom import Dataset, dcmread, dcmwrite
 from pydicom.dataset import FileMetaDataset
 from pydicom.uid import ImplicitVRLittleEndian
 
+
 PathLike = Union[Path, str]
 ORIENTATION = [f'ImageOrientationPatient{i}' for i in range(6)]
 

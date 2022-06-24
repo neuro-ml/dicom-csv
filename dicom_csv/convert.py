@@ -2,7 +2,6 @@ import logging
 import warnings
 
 from pydicom.uid import generate_uid
-
 from .utils import Series, Instances, bufferize_instance, set_file_meta, collect, Instance
 
 logger = logging.getLogger(__name__)
