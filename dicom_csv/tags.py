@@ -17,6 +17,9 @@ def get_tag(instance: Instance, tag, default=inspect.Parameter.empty):
 
 
 def get_common_tag(series: Series, tag, default=inspect.Parameter.empty):
+    if len(series) == 0:
+        raise ValueError('Empty series.')
+
     try:
         try:
             unique_values = {get_tag(i, tag) for i in series}
@@ -34,8 +37,8 @@ def get_common_tag(series: Series, tag, default=inspect.Parameter.empty):
             raise
         else:
             return default
-        
-        
+
+
 def _get_sop_uid(instance):
     return str(get_tag(instance, 'SOPInstanceUID'))
 
