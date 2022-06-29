@@ -13,12 +13,13 @@ from .misc import get_image
 
 __all__ = [
     'get_orientation_matrix', 'get_slice_plane', 'get_slices_plane', 'Plane', 'order_series',
-    'get_slice_orientation', 'get_slices_orientation', 'SlicesOrientation',
-    'get_slice_locations', 'locations_to_spacing', 'get_slice_spacing', 'get_pixel_spacing',
-    'get_voxel_spacing', 'get_image_position_patient', 'drop_duplicated_slices',
+    'get_slice_locations', 'locations_to_spacing', 'get_slice_spacing',
+    'get_pixel_spacing', 'get_voxel_spacing', 'get_image_position_patient', 'drop_duplicated_slices',
+    'orientation_matrix_to_slices_plane',
     # deprecated
-    'get_axes_permutation', 'get_flipped_axes', 'get_image_plane', 
-    'restore_orientation_matrix'
+    'get_slice_orientation', 'get_slices_orientation', 'SlicesOrientation',
+    'orientation_matrix_to_slices_orientation', 'get_axes_permutation', 'get_flipped_axes',
+    'get_image_plane', 'restore_orientation_matrix'
 ]
 
 
