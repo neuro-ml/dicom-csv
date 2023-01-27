@@ -210,7 +210,7 @@ def get_image_size(series: Series) -> Tuple[int, int, int]:
     rows = get_common_tag(series, 'Rows')
     columns = get_common_tag(series, 'Columns')
     slices = len(series)
-    return rows, columns, slices
+    return int(rows), int(columns), slices
 
 
 def drop_duplicated_slices(series: Series, tolerance_hu=1) -> Series:
