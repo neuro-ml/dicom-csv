@@ -1,26 +1,36 @@
+from pathlib import Path
+
 from setuptools import setup, find_packages
 
-classifiers = '''Development Status :: 4 - Beta
-Programming Language :: Python :: 3.6
-Programming Language :: Python :: 3.7
-Programming Language :: Python :: 3.8
-'''
-
-with open('README.md', encoding='utf-8') as file:
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'License :: OSI Approved :: MIT License',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3 :: Only',
+]
+name = 'dicom_csv'
+root = Path(__file__).resolve().parent
+with open(root / 'README.md', encoding='utf-8') as file:
     long_description = file.read()
 
-with open('requirements.txt', encoding='utf-8') as file:
+with open(root / 'requirements.txt', encoding='utf-8') as file:
     requirements = file.read().splitlines()
 
 # get the current version
-with open('dicom_csv/__version__.py', encoding='utf-8') as file:
+with open(root / name / '__version__.py', encoding='utf-8') as file:
     scope = {}
     exec(file.read(), scope)
     __version__ = scope['__version__']
 
 setup(
-    name='dicom_csv',
-    packages=find_packages(include=('dicom_csv',)),
+    name=name,
+    packages=find_packages(include=(name,)),
     include_package_data=True,
     version=__version__,
     description='Utils for gathering, aggregation and handling metadata from DICOM files.',
@@ -29,8 +39,8 @@ setup(
     license='MIT',
     url='https://github.com/neuro-ml/dicom-csv',
     download_url='https://github.com/neuro-ml/dicom-csv/v%s.tar.gz' % __version__,
-    keywords=[],
-    classifiers=classifiers.splitlines(),
+    keywords=['DICOM'],
+    classifiers=classifiers,
     install_requires=requirements,
     extras_require={
         'nifti': 'nibabel',
