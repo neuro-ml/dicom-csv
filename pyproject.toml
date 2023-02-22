@@ -1,0 +1,56 @@
+[project]
+name = 'dicom_csv'
+dynamic = ['version']
+description = 'Utils for gathering, aggregation and handling metadata from DICOM files.'
+readme = 'README.md'
+requires-python = '>=3.6'
+license = { file = 'LICENSE' }
+keywords = ['DICOM']
+authors = [
+    { name = 'NeuroML Group', email = 'maxs987@gmail.com' }
+]
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'License :: OSI Approved :: MIT License',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3 :: Only',
+]
+dependencies = [
+    'pydicom>=2.0,<3.0',
+    'pandas',
+    'numpy',
+    'tqdm',
+]
+[project.optional-dependencies]
+'nifti' = [
+    'nibabel',
+]
+'all' = [
+    'nibabel',
+]
+
+[project.urls]
+'Homepage' = 'https://github.com/neuro-ml/dicom_csv'
+'Issues' = 'https://github.com/neuro-ml/dicom_csv/issues'
+'Source' = 'https://github.com/neuro-ml/dicom_csv'
+'Docs' = 'https://dicom-csv.readthedocs.io/en/latest/index.html'
+
+[project.scripts]
+dicom-csv = 'dicom_csv.scripts:join_to_csv'
+collect_contours = 'dicom_csv.scripts:collect_contours'
+
+[build-system]
+requires = ['setuptools>=43.0.0', 'wheel']
+build-backend = 'setuptools.build_meta'
+
+[tool.setuptools.packages.find]
+include = ['dicom_csv']
+
+[tool.setuptools.dynamic]
+version = { attr = 'dicom_csv.__version__.__version__' }
