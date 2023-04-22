@@ -110,12 +110,12 @@ def extract_meta(instance: Dataset, read_pixel_array: bool = False) -> dict:
         if isinstance(value, PERSON_CLASS):
             result[attr] = str(value)
 
+        elif isinstance(value, (int, float, str)):
+            result[attr] = value
+
         elif attr in SERIAL:
             for pos, num in enumerate(value):
                 result[f'{attr}{pos}'] = num
-
-        elif isinstance(value, (int, float, str)):
-            result[attr] = value
 
     return result
 
