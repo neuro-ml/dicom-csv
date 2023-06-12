@@ -7,7 +7,7 @@ from typing import Sequence, Iterable
 
 import pandas as pd
 from tqdm import tqdm
-from pydicom import valuerep, errors, dcmread, Dataset, sequence
+from pydicom import valuerep, errors, dcmread, Dataset, DataElement, sequence
 from pydicom.uid import ImplicitVRLittleEndian
 
 from .convert import is_volumetric_ct, split_volume
@@ -37,14 +37,14 @@ def read_dicom(path: PathLike, force: bool = False):
         raise
 
 
-def iter_private_tags(ds):
+def iter_private_tags(ds: Dataset) -> Iterable[DataElement]:
     for tag in ds.values():
         if tag.tag.is_private:
             yield tag
 
 
 def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = False,
-                  unpack_volumetric: bool = False, extract_private=False) -> Iterable[dict]:
+                  unpack_volumetric: bool = False, extract_private: bool = False) -> Iterable[dict]:
     """
     Get a dict containing the metadata from the DICOM file located at ``path``.
 
@@ -90,7 +90,7 @@ def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = F
         yield result
 
 
-def extract_meta(instance: Dataset, read_pixel_array: bool = False, extract_private=False) -> dict:
+def extract_meta(instance: Dataset, read_pixel_array: bool = False, extract_private: bool = False) -> dict:
     result = {}
     if read_pixel_array:
         try:
@@ -138,7 +138,7 @@ def extract_meta(instance: Dataset, read_pixel_array: bool = False, extract_priv
 
 
 def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True, verbose: int = 0,
-              read_pixel_array: bool = False, force: bool = True, unpack_volumetric: bool = True, extract_private=False,
+              read_pixel_array: bool = False, force: bool = True, unpack_volumetric: bool = True, extract_private: bool = False,
               total: bool = False) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
