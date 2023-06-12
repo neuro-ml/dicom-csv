@@ -38,8 +38,9 @@ def read_dicom(path: PathLike, force: bool = False):
 
 
 def iter_private_tags(ds: Dataset) -> Iterable[DataElement]:
+    ds.__repr__() # https://github.com/pydicom/pydicom/issues/1805
     for tag in ds.values():
-        if tag.tag.is_private:
+        if tag.is_private:
             yield tag
 
 
