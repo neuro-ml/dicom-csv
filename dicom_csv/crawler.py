@@ -38,8 +38,7 @@ def read_dicom(path: PathLike, force: bool = False):
 
 
 def iter_private_tags(ds: Dataset) -> Iterable[DataElement]:
-    ds.__repr__() # https://github.com/pydicom/pydicom/issues/1805
-    for tag in ds.values():
+    for tag in ds:
         if tag.is_private:
             yield tag
 
@@ -130,10 +129,13 @@ def extract_meta(instance: Dataset, read_pixel_array: bool = False, extract_priv
                 pass
             if private_tag.VR not in valuerep.LONG_VALUE_VR:
                 value = instance.get(private_tag.tag).value
+                prefix = f"PRIVATE-{str(private_tag.tag.group).zfill(4)}-{str(private_tag.tag.elem).zfill(4)}"
+                name = private_tag.name.replace(',', '-') # private tags might have the same tag.name and have ',' in name
+                name = f'{prefix}-{name}'
                 if isinstance(value, (int, float)):
-                    result[private_tag.name] = value
+                    result[name] = value
                 if isinstance(value, str):
-                    result[private_tag.name] = value[:100] # just in case
+                    result[name] = value[:100] # just in case
 
     return result
 
