@@ -7,7 +7,7 @@ from typing import Sequence, Iterable
 
 import pandas as pd
 from tqdm import tqdm
-from pydicom import valuerep, errors, dcmread, Dataset
+from pydicom import valuerep, errors, dcmread, Dataset, sequence
 from pydicom.uid import ImplicitVRLittleEndian
 
 from .convert import is_volumetric_ct, split_volume
@@ -37,8 +37,15 @@ def read_dicom(path: PathLike, force: bool = False):
         raise
 
 
+def iter_private_tags(ds):
+    ds.__repr__() # https://github.com/pydicom/pydicom/issues/1805
+    for tag in ds.elements():
+        if tag.tag.is_private:
+            yield tag
+
+
 def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = False,
-                  unpack_volumetric: bool = False) -> Iterable[dict]:
+                  unpack_volumetric: bool = False, extract_private=False) -> Iterable[dict]:
     """
     Get a dict containing the metadata from the DICOM file located at ``path``.
 
@@ -79,12 +86,12 @@ def get_file_meta(path: PathLike, force: bool = True, read_pixel_array: bool = F
         instances = [instance]
 
     for instance in instances:
-        result = extract_meta(instance, read_pixel_array)
+        result = extract_meta(instance, read_pixel_array, extract_private)
         result.setdefault('NoError', True)
         yield result
 
 
-def extract_meta(instance: Dataset, read_pixel_array: bool = False) -> dict:
+def extract_meta(instance: Dataset, read_pixel_array: bool = False, extract_private=False) -> dict:
     result = {}
     if read_pixel_array:
         try:
@@ -117,11 +124,22 @@ def extract_meta(instance: Dataset, read_pixel_array: bool = False) -> dict:
             for pos, num in enumerate(value):
                 result[f'{attr}{pos}'] = num
 
+    if extract_private:
+        for private_tag in iter_private_tags(instance):
+            if isinstance(private_tag, sequence.Sequence):
+                pass
+            if private_tag.VR not in valuerep.LONG_VALUE_VR:
+                value = instance.get(private_tag.tag).value
+                if isinstance(value, (int, float)):
+                    result[private_tag.name] = value
+                if isinstance(value, str):
+                    result[private_tag.name] = value[:100] # just in case
+
     return result
 
 
 def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bool = True, verbose: int = 0,
-              read_pixel_array: bool = False, force: bool = True, unpack_volumetric: bool = True,
+              read_pixel_array: bool = False, force: bool = True, unpack_volumetric: bool = True, extract_private=False,
               total: bool = False) -> pd.DataFrame:
     """
     Returns a dataframe containing metadata for each file in all the subfolders of ``top``.
@@ -190,7 +208,7 @@ def join_tree(top: PathLike, ignore_extensions: Sequence[str] = (), relative: bo
                 bar.set_description(str(rel_path / filename))
 
             for entry in get_file_meta(root / filename, force=force, read_pixel_array=read_pixel_array,
-                                       unpack_volumetric=unpack_volumetric):
+                                       unpack_volumetric=unpack_volumetric, extract_private=extract_private):
                 entry['PathToFolder'] = str(rel_path if relative else root)
                 entry['FileName'] = filename
                 result.append(entry)
