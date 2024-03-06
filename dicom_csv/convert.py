@@ -1,8 +1,10 @@
 import logging
 import warnings
 
+from dicom_csv.exceptions import TagMissingError
 from pydicom.uid import generate_uid
 from .utils import Series, Instances, bufferize_instance, set_file_meta, collect, Instance
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,13 @@ def split_volume(instance: Instance) -> Series:
         raise ValueError('The instance is not volumetric.')
 
     instance = bufferize_instance(instance)
+    if not hasattr(instance, 'pixel_array'):
+        raise TagMissingError('PixelData')
+    if not hasattr(instance, 'PerFrameFunctionalGroupsSequence'):
+        raise TagMissingError('PerFrameFunctionalGroupsSequence')
+    if not hasattr(instance, 'SharedFunctionalGroupsSequence'):
+        raise TagMissingError('SharedFunctionalGroupsSequence')
+
     pixel_array = instance.pixel_array
     frames_sequence = instance.PerFrameFunctionalGroupsSequence
     shared_tags = _get_shared_tags(instance.SharedFunctionalGroupsSequence[0])
