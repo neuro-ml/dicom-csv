@@ -6,7 +6,6 @@ classifiers = [
     'Development Status :: 4 - Beta',
     'License :: OSI Approved :: MIT License',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
@@ -47,7 +46,7 @@ setup(
         'nifti': 'nibabel',
         'all': 'nibabel',
     },
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     entry_points={
         'console_scripts': [
             'dicom-csv = dicom_csv.scripts:join_to_csv',
