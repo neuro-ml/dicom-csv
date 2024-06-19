@@ -1,7 +1,6 @@
 import argparse
-import numpy as np
 
-from dicom_csv import join_tree
+from .crawler import join_tree
 
 
 def join_to_csv():

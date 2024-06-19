@@ -1,12 +1,13 @@
 """Tools for grouping DICOM metadata into images."""
 from typing import Callable, Sequence, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from .spatial import get_voxel_spacing, get_orientation_matrix, get_image_position_patient, order_series
 from .misc import stack_images
+from .spatial import get_image_position_patient, get_orientation_matrix, get_voxel_spacing, order_series
 from .utils import Series
+
 
 __all__ = 'aggregate_images', 'normalize_identifiers', 'select'
 

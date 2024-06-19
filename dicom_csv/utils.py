@@ -1,6 +1,7 @@
+import warnings
 from io import BytesIO
 from pathlib import Path
-from typing import Union, Sequence
+from typing import Sequence, Union
 
 import pandas as pd
 from pydicom import Dataset, dcmread, dcmwrite
@@ -19,10 +20,6 @@ def split_floats(string, sep=','):
     return list(map(float, string.split(sep)))
 
 
-def split_ints(string, sep=','):
-    return list(map(int, string.split(sep)))
-
-
 def contains_info(row, *cols):
     return all(col in row and pd.notnull(row[col]) for col in cols)
 
@@ -30,11 +27,6 @@ def contains_info(row, *cols):
 def extract_dims(x):
     assert len(x) == 1, len(x)
     return x[0]
-
-
-def zip_equal(*args):
-    assert not args or all(len(args[0]) == len(x) for x in args)
-    return zip(*args)
 
 
 def bufferize_instance(instance: Dataset, force=True, write_like_original=True):
@@ -61,3 +53,11 @@ def set_file_meta(instance: Dataset):
 
 def collect(func):
     return lambda *args, **kwargs: list(func(*args, **kwargs))
+
+
+def deprecate(func):
+    def wrapper(*args, **kwargs):
+        warnings.warn(f'{func.__name__} is deprecated', DeprecationWarning)
+        return func(*args, **kwargs)
+
+    return wrapper

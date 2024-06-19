@@ -1,7 +1,9 @@
 import inspect
 from itertools import groupby
-from .utils import Series, Instance, collect
+
 from .exceptions import *
+from .utils import Instance, Series, collect
+
 
 __all__ = ['get_tag', 'get_common_tag', 'drop_duplicated_instances']
 

@@ -1,9 +1,10 @@
 import logging
 import warnings
 
-from dicom_csv.exceptions import TagMissingError
 from pydicom.uid import generate_uid
-from .utils import Series, Instances, bufferize_instance, set_file_meta, collect, Instance
+
+from .exceptions import TagMissingError
+from .utils import Instance, Instances, Series, bufferize_instance, collect, set_file_meta
 
 
 logger = logging.getLogger(__name__)

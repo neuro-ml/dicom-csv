@@ -1,8 +1,9 @@
 from functools import wraps
-import pandas as pd
-from dicom_csv.utils import split_floats
 
-from dicom_csv.crawler import SERIAL
+import pandas as pd
+
+from .crawler import SERIAL
+from .utils import split_floats
 
 
 def csv_instance(func):
