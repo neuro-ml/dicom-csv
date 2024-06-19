@@ -1,13 +1,15 @@
-import pydicom
-import numpy as np
-from pathlib import Path
 from dataclasses import dataclass
+
+import numpy as np
+import pydicom
 from skimage.draw import polygon
-from dicom_csv import order_series
-from dicom_csv.utils import Series
-from dicom_csv.spatial import (get_orientation_matrix, get_voxel_spacing,
-                               get_image_position_patient, get_image_size,
-                              get_slices_plane, Plane)
+
+from .spatial import (
+    Plane, get_image_position_patient, get_image_size, get_orientation_matrix, get_slices_plane, get_voxel_spacing,
+    order_series
+)
+from .utils import Series
+
 
 # TODO: fix logic -> read -> move to voxel space -> move to mask
 # TODO: Consider only work with 2D coords, completely dropping the third column

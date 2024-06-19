@@ -3,12 +3,16 @@ import warnings
 from functools import partial
 from operator import itemgetter
 from os.path import join as jp
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
+import pandas as pd
+from more_itertools import zip_equal
+from pydicom import dcmread
 from pydicom.pixel_data_handlers import convert_color_space
 
-from .utils import *
+from .utils import ORIENTATION, Dataset, PathLike, Series, contains_info, deprecate, split_floats
+
 
 __all__ = 'get_image', 'stack_images'
 
@@ -43,7 +47,7 @@ class Default:
 
 
 # TODO: move to pathlib
-@np.deprecate
+@deprecate
 def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[bool, None] = Default,
                 scaling: bool = None) -> np.ndarray:
     """

@@ -1,15 +1,17 @@
-from itertools import groupby
-from typing import Sequence, Tuple, Union, NamedTuple
 from enum import Enum
+from itertools import groupby
+from typing import NamedTuple, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from more_itertools import zip_equal
 
-from .interface import csv_series
-from .tags import get_common_tag, get_tag, drop_duplicated_instances
-from .utils import Series, Instance, ORIENTATION, extract_dims, split_floats, zip_equal, contains_info, collect
 from .exceptions import *
+from .interface import csv_series
 from .misc import get_image
+from .tags import drop_duplicated_instances, get_common_tag, get_tag
+from .utils import ORIENTATION, Instance, Series, collect, deprecate, extract_dims, split_floats
+
 
 __all__ = [
     'get_orientation_matrix', 'get_slice_plane', 'get_slices_plane', 'Plane', 'order_series',
@@ -19,7 +21,7 @@ __all__ = [
     # deprecated
     'get_slice_orientation', 'get_slices_orientation', 'SlicesOrientation',
     'orientation_matrix_to_slices_orientation', 'get_axes_permutation', 'get_flipped_axes',
-    'get_image_plane', 'restore_orientation_matrix'
+    'restore_orientation_matrix'
 ]
 
 
@@ -90,7 +92,7 @@ def get_slices_plane(series: Series) -> Plane:
     return orientation_matrix_to_slices_plane(get_orientation_matrix(series))
 
 
-@np.deprecate
+@deprecate
 def orientation_matrix_to_slices_orientation(om: np.ndarray) -> SlicesOrientation:
     planes = _orientation_matrix_to_image_planes(om)
 
@@ -113,12 +115,12 @@ def orientation_matrix_to_slices_orientation(om: np.ndarray) -> SlicesOrientatio
     return SlicesOrientation(transpose=transpose, flip_axes=tuple(flip_axes))
 
 
-@np.deprecate
+@deprecate
 def get_slice_orientation(instance: Instance) -> SlicesOrientation:
     return orientation_matrix_to_slices_orientation(_get_orientation_matrix(instance))
 
 
-@np.deprecate
+@deprecate
 @csv_series
 def get_slices_orientation(series: Series) -> SlicesOrientation:
     return orientation_matrix_to_slices_orientation(get_orientation_matrix(series))
@@ -223,7 +225,7 @@ def drop_duplicated_slices(series: Series, tolerance_hu=1) -> Series:
         indices = sorted(indices, key=lambda i: (slice_locations[i], instance_numbers[i]))
     except TagMissingError:
         indices = sorted(indices, key=lambda i: slice_locations[i])
-    
+
     new_indices = []
     for _, group in groupby(indices, key=lambda i: slice_locations[i]):
         group = list(group)
@@ -239,16 +241,12 @@ def drop_duplicated_slices(series: Series, tolerance_hu=1) -> Series:
 # ------------------ DEPRECATED ------------------------
 
 
-get_image_plane = np.deprecate(get_slices_plane, old_name='get_image_plane')
-get_xyz_spacing = np.deprecate(get_voxel_spacing, old_name='get_xyz_spacing')
-
-
-@np.deprecate
+@deprecate
 def get_axes_permutation(row: pd.Series):
     return np.abs(get_orientation_matrix(row)).argmax(axis=0)
 
 
-@np.deprecate
+@deprecate
 @csv_series
 @collect
 def get_flipped_axes(series: Series):
@@ -258,7 +256,7 @@ def get_flipped_axes(series: Series):
             yield axis
 
 
-@np.deprecate
+@deprecate
 def order_slice_locations(dicom_metadata: pd.Series):
     locations = split_floats(dicom_metadata.SliceLocations)
     if np.any([np.isnan(loc) for loc in locations]):
@@ -269,33 +267,6 @@ def order_slice_locations(dicom_metadata: pd.Series):
         split_floats(dicom_metadata.InstanceNumbers),
         locations
     ))).T
-
-
-# TODO: something must return transpose order, so we can apply it to all important metadata
-# TODO: take PatientPosition into account
-# def transpose_series(series: Series, plane: Union[Plane, int] = Plane.Axial):
-#     pass
-
-
-# TODO: rewrite based on deployment code, specifically use transpose based on Plane
-@np.deprecate
-def normalize_orientation(image: np.ndarray, row: pd.Series):
-    """
-    Transposes and flips the ``image`` to standard (Coronal, Sagittal, Axial) orientation.
-
-    Warnings
-    --------
-    Changing image orientation. New image orientation will not coincide with metadata!
-    """
-
-    if not contains_info(row, *ORIENTATION):
-        raise ValueError('There is no enough metadata to standardize the image orientation.')
-
-    if np.isnan(get_orientation_matrix(row)).any():
-        raise ValueError('There is no enough metadata to standardize the image orientation.')
-
-    image = np.flip(image, axis=get_flipped_axes(row))
-    return image.transpose(*get_axes_permutation(row))
 
 
 # TODO: legacy?

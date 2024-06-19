@@ -3,15 +3,16 @@ import logging
 import os
 import struct
 from pathlib import Path
-from typing import Sequence, Iterable
+from typing import Iterable, Sequence
 
 import pandas as pd
-from tqdm import tqdm
-from pydicom import valuerep, errors, dcmread, Dataset, DataElement, sequence
+from pydicom import DataElement, Dataset, dcmread, errors, sequence, valuerep
 from pydicom.uid import ImplicitVRLittleEndian
+from tqdm import tqdm
 
 from .convert import is_volumetric_ct, split_volume
 from .utils import PathLike
+
 
 __all__ = 'get_file_meta', 'join_tree'
 

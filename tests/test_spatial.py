@@ -7,8 +7,8 @@ from dicom_csv.spatial import (
     get_orientation_matrix,
     get_image_position_patient,
     get_slice_locations,
-    get_image_plane,
     Plane,
+    get_slices_plane,
     _get_slices_deltas,
     get_pixel_spacing,
     get_image_size,
@@ -56,7 +56,7 @@ def test_get_slice_locations(image):
 
 
 def test_get_image_plane(image):
-    plane = get_image_plane(image)
+    plane = get_slices_plane(image)
     assert plane == Plane.Axial
 
 
@@ -80,4 +80,3 @@ def test_get_image_size(image):
 @pytest.mark.skip
 def test_order_series(series):
     series = order_series(series)
-    pass

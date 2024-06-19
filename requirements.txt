@@ -2,3 +2,4 @@ pydicom>=2.0,<3.0
 pandas
 numpy
 tqdm
+more_itertools
