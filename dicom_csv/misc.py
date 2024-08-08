@@ -17,28 +17,23 @@ from .utils import ORIENTATION, Dataset, PathLike, Series, contains_info, deprec
 __all__ = 'get_image', 'stack_images'
 
 
-def get_image(instance: Dataset, to_color_space: Optional[str] = None):
-    def _to_int(x):
-        # this little trick helps to avoid unneeded type casting
-        if x == int(x):
-            x = int(x)
-        return x
-
+def get_image(instance: Dataset, to_color_space: Optional[str] = None, dtype=np.int32):
     array = instance.pixel_array
     if to_color_space is not None:
         array = convert_color_space(array, instance.PhotometricInterpretation, to_color_space)
 
     slope, intercept = instance.get('RescaleSlope'), instance.get('RescaleIntercept')
+    caster = np.dtype(dtype).type
     if slope is not None and slope != 1:
-        array = array * _to_int(slope)
+        array = array * caster(slope)
     if intercept is not None and intercept != 0:
-        array = array + _to_int(intercept)
+        array = array + caster(intercept)
 
     return array
 
 
-def stack_images(series: Series, axis: int = -1, to_color_space: Optional[str] = None):
-    return np.stack(list(map(partial(get_image, to_color_space=to_color_space), series)), axis)
+def stack_images(series: Series, axis: int = -1, to_color_space: Optional[str] = None, dtype=np.int32):
+    return np.stack(list(map(partial(get_image, to_color_space=to_color_space, dtype=dtype), series)), axis)
 
 
 # TODO: legacy support
