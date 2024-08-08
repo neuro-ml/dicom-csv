@@ -27,6 +27,8 @@ def get_image(instance: Dataset, to_color_space: Optional[str] = None, dtype=np.
     if slope is not None and slope != 1:
         array = array * caster(slope)
     if intercept is not None and intercept != 0:
+        # cast is needed bcz in numpy>=2.0.0 uint8 + python int = uint8 overflow
+        # see https://numpy.org/neps/nep-0050-scalar-promotion.html#nep50
         array = array + caster(intercept)
 
     return array
