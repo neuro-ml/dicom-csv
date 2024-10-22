@@ -20,7 +20,7 @@ __all__ = 'get_image', 'stack_images'
 def get_image(instance: Dataset, to_color_space: Optional[str] = None):
     def _to_int(x):
         # this little trick helps to avoid unneeded type casting
-        if x == int(x):
+        if x is not None and x == int(x):
             x = int(x)
         return x
 
@@ -28,11 +28,14 @@ def get_image(instance: Dataset, to_color_space: Optional[str] = None):
     if to_color_space is not None:
         array = convert_color_space(array, instance.PhotometricInterpretation, to_color_space)
 
-    slope, intercept = instance.get('RescaleSlope'), instance.get('RescaleIntercept')
+    slope, intercept = _to_int(instance.get('RescaleSlope')), _to_int(instance.get('RescaleIntercept'))
+
     if slope is not None and slope != 1:
-        array = array * _to_int(slope)
+        array = array * np.min_scalar_type(slope).type(slope)
     if intercept is not None and intercept != 0:
-        array = array + _to_int(intercept)
+        # cast is needed bcz in numpy>=2.0.0 uint8 + python int = uint8 overflow
+        # see https://numpy.org/neps/nep-0050-scalar-promotion.html#nep50
+        array = array + np.min_scalar_type(intercept).type(intercept)
 
     return array
 
