@@ -1,13 +1,11 @@
 import os
 import warnings
-from functools import partial
 from operator import itemgetter
 from os.path import join as jp
 from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
-from more_itertools import zip_equal
 from pydicom import dcmread
 from pydicom.pixel_data_handlers import convert_color_space
 
@@ -17,7 +15,11 @@ from .utils import ORIENTATION, Dataset, PathLike, Series, contains_info, deprec
 __all__ = 'get_image', 'stack_images'
 
 
-def get_image(instance: Dataset, to_color_space: Optional[str] = None):
+def get_image(
+    instance: Dataset,
+    to_color_space: Optional[str] = None,
+    out: Optional[np.ndarray] = None,
+) -> np.ndarray:
     def _to_int(x):
         # this little trick helps to avoid unneeded type casting
         if x is not None and x == int(x):
@@ -37,11 +39,40 @@ def get_image(instance: Dataset, to_color_space: Optional[str] = None):
         # see https://numpy.org/neps/nep-0050-scalar-promotion.html#nep50
         array = array + np.min_scalar_type(intercept).type(intercept)
 
+    if out is not None:
+        np.copyto(out, array)
+        return out
     return array
 
 
-def stack_images(series: Series, axis: int = -1, to_color_space: Optional[str] = None):
-    return np.stack(list(map(partial(get_image, to_color_space=to_color_space), series)), axis)
+def stack_images(series: Series, axis: int = -1, to_color_space: Optional[str] = None) -> np.ndarray:
+    """Stack slice arrays into one 3D array. Pre-allocates and fills to avoid np.stack copy overhead."""
+    n = len(series)
+    if n == 0:
+        raise ValueError("series is empty")
+    first = get_image(series[0], to_color_space=to_color_space)
+    rows, cols = first.shape
+    dtype = first.dtype
+    if axis < 0:
+        axis += 3
+
+    if axis == 0:
+        out = np.empty((n, rows, cols), dtype=dtype, order="C")
+        np.copyto(out[0], first)
+        for i in range(1, n):
+            get_image(series[i], to_color_space=to_color_space, out=out[i])
+    elif axis == 1:
+        out = np.empty((rows, n, cols), dtype=dtype, order="C")
+        np.copyto(out[:, 0, :], first)
+        for i in range(1, n):
+            get_image(series[i], to_color_space=to_color_space, out=out[:, i, :])
+    else:
+        # axis == 2 or -1
+        out = np.empty((rows, cols, n), dtype=dtype, order="C")
+        np.copyto(out[..., 0], first)
+        for i in range(1, n):
+            get_image(series[i], to_color_space=to_color_space, out=out[..., i])
+    return out
 
 
 # TODO: legacy support
@@ -73,7 +104,7 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[b
     if base_path is not None:
         folder = os.path.join(base_path, folder)
     if contains_info(row, 'InstanceNumbers'):
-        files = map(itemgetter(1), sorted(zip_equal(split_floats(row.InstanceNumbers), files)))
+        files = map(itemgetter(1), sorted(zip(split_floats(row.InstanceNumbers), files, strict=True)))
 
     x = np.stack([dcmread(jp(folder, file)).pixel_array for file in files], axis=-1)
 
