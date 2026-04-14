@@ -4,7 +4,6 @@ from typing import NamedTuple, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from more_itertools import zip_equal
 
 from .exceptions import *
 from .interface import csv_series
@@ -269,9 +268,10 @@ def order_slice_locations(dicom_metadata: pd.Series):
         raise ValueError("Some SliceLocations are missing")
     # Do not put `restore_slice_location` here,
     # since `should_flip` has unexpected behaviour in that case.
-    return np.array(sorted(zip_equal(
+    return np.array(sorted(zip(
         split_floats(dicom_metadata.InstanceNumbers),
-        locations
+        locations,
+        strict=True
     ))).T
 
 
