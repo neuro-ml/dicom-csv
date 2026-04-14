@@ -6,7 +6,6 @@ from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
-from more_itertools import zip_equal
 from pydicom import dcmread
 from pydicom.pixel_data_handlers import convert_color_space
 
@@ -105,7 +104,7 @@ def load_series(row: pd.Series, base_path: PathLike = None, orientation: Union[b
     if base_path is not None:
         folder = os.path.join(base_path, folder)
     if contains_info(row, 'InstanceNumbers'):
-        files = map(itemgetter(1), sorted(zip_equal(split_floats(row.InstanceNumbers), files)))
+        files = map(itemgetter(1), sorted(zip(split_floats(row.InstanceNumbers), files, strict=True)))
 
     x = np.stack([dcmread(jp(folder, file)).pixel_array for file in files], axis=-1)
 
